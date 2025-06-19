@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPP - Escala de Serviços</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Estilos adaptados do seu exemplo */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        html {
+            height: 100%;
+            /* Tonalidade roxa mais escura e gradiente mais animado */
+            background: linear-gradient(135deg, #1c052e, #2a0845, #1d0638);
+            background-size: 300% 300%;
+            background-attachment: fixed;
+            animation: purpleGradient 12s ease-in-out infinite;
+        }
+
+        @keyframes purpleGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        body {
+            background: transparent;
+            color: #f3e5f5;
+            min-height: 100vh;
+        }
+
+        /* Glassmorphism Card Style */
+        .glass-card {
+            background: rgba(20, 2, 40, 0.45); /* Fundo roxo escuro translúcido */
+            backdrop-filter: blur(12px) saturate(150%);
+            -webkit-backdrop-filter: blur(12px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 1rem; /* 16px */
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        /* Destaque para a linha do Perito */
+        .perito-row {
+            background-color: rgba(45, 11, 66, 0.8) !important;
+            color: #e9d5ff;
+            font-weight: 600;
+        }
+
+        /* Classes de status */
+        .status-cell {
+            transition: background-color 0.3s ease;
+            border-radius: 4px;
+        }
+        .status-feito { background-color: rgba(34, 197, 94, 0.5); } /* green-500/50 */
+        .status-hoje { background-color: rgba(250, 204, 21, 0.5); } /* yellow-400/50 */
+        .status-justificado { background-color: rgba(59, 130, 246, 0.5); } /* blue-500/50 */
+        .status-pendente { background-color: rgba(239, 68, 68, 0.5); } /* red-500/50 */
+
+    </style>
+</head>
+<body class="text-white">
+
+    <!-- Header -->
+    <header class="glass-card sticky top-0 z-50 m-4">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center">
+                    <i class="fas fa-shield-halved text-3xl text-purple-400 mr-3"></i>
+                    <h1 class="text-xl md:text-2xl font-bold text-white">Serviço de Proteção dos Professores</h1>
+                </div>
+                <nav>
+                    <a href="./index.html" class="text-gray-200 hover:text-white font-semibold px-3 py-2">Voltar à Página Inicial</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-12">
+        <h2 class="text-4xl font-bold text-white mb-4 text-center drop-shadow-lg">Escala de Serviços</h2>
+        
+        <!-- Legend -->
+        <div id="legend" class="glass-card p-4 mb-8 max-w-2xl mx-auto hidden">
+            <h3 class="text-lg font-semibold text-center mb-3">Legenda de Cores</h3>
+            <ul class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 text-sm text-center">
+                <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-feito"></span> Feito</li>
+                <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-hoje"></span> Hoje</li>
+                <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-pendente"></span> Pendente</li>
+                <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-justificado"></span> Justificado</li>
+            </ul>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="text-center py-10">
+            <i class="fas fa-spinner fa-spin text-4xl text-white"></i>
+            <p class="mt-2 text-white/80">Carregando e verificando escalas...</p>
+        </div>
+
+        <!-- Schedule Container -->
+        <div id="schedule-container" class="space-y-12">
+            <!-- As escalas das equipes serão inseridas aqui -->
+        </div>
+
+        <!-- Error Message Container -->
+        <div id="error-container"></div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-card mt-12 mx-4 mb-4">
+        <div class="container mx-auto px-6 py-4 text-center text-white/70 text-sm">
+            <p class="mb-1">&copy; 2024 Serviço de Proteção dos Professores. Todos os direitos reservados.</p>
+            <p>Desenvolvido por <strong class="text-white/90">Pegas</strong> e idealizado por <strong class="text-white/90">Sr.Gabriel</strong>.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- Configuration ---
+        const API_KEY = 'AIzaSyBQhWdy4iyFCk9Lh89x8weSIyl0knXgA34';
+        const SCHEDULE_SPREADSHEET_ID = '19u9h0OnF_BlD5w8rTE9zaksh3ImMemXFQm1oob_A1Eo';
+        const REPORTS_SPREADSHEET_ID = '18iZ8Dm4rCQL2y5Rurqpb61zh3RZpUApBArjNrrHufOY';
+
+        const TEAMS = [
+            { name: '[SPP] Equipe Alpha', reportTab: 'Equipe Alpha', range: 'C13:J17' },
+            { name: '[SPP] Equipe Beta', reportTab: 'Equipe Beta', range: 'C13:J17' },
+            { name: '[SPP] Equipe Delta', reportTab: 'Equipe Delta', range: 'C13:J17' },
+            { name: '[SPP] Equipe Ômega', reportTab: null, range: 'C14:C16' }
+        ];
+
+        // --- DOM Elements ---
+        const loadingEl = document.getElementById('loading');
+        const legendEl = document.getElementById('legend');
+        const scheduleContainer = document.getElementById('schedule-container');
+        const errorContainer = document.getElementById('error-container');
+
+        // --- Date Helper ---
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayStr = today.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+        function parseDate(dateStr) {
+            if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return null;
+            const [day, month, year] = dateStr.split('/');
+            const date = new Date(year, month - 1, day);
+            date.setHours(0,0,0,0);
+            return date;
+        }
+
+        async function fetchAllData() {
+            try {
+                const [scheduleData, reportData] = await Promise.all([ fetchScheduleData(), fetchReportData() ]);
+                const activityMaps = processReportData(reportData);
+                const schedule = processScheduleData(scheduleData);
+                scheduleContainer.innerHTML = '';
+                legendEl.classList.remove('hidden');
+                
+                schedule.forEach(teamData => {
+                    if (teamData.isOmega && teamData.tableData.every(row => !row[0])) {
+                        return; // Don't render Omega if it's empty
+                    }
+                    if (teamData.isOmega) {
+                        renderOmegaTeam(teamData);
+                    } else {
+                        renderTeamSchedule(teamData, activityMaps);
+                    }
+                });
+            } catch (error) {
+                console.error('Erro ao buscar ou processar dados:', error);
+                errorContainer.innerHTML = `<div class="glass-card text-red-300 text-center p-4"><p>Não foi possível carregar as escalas. Verifique o console para mais detalhes.</p></div>`;
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+        
+        async function fetchScheduleData() {
+            const ranges = TEAMS.flatMap(t => [`'${t.name}'!C9`,`'${t.name}'!F11`,`'${t.name}'!I11`,`'${t.name}'!F20:G20`,`'${t.name}'!${t.range}`]);
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SCHEDULE_SPREADSHEET_ID}/values:batchGet?ranges=${ranges.join('&ranges=')}&key=${API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Falha ao buscar dados da escala.');
+            return response.json();
+        }
+
+        async function fetchReportData() {
+            const reportTeams = TEAMS.filter(t => t.reportTab);
+            const ranges = reportTeams.flatMap(t => [`'${t.reportTab}'!C14:F400`, `'${t.reportTab}'!N14:P400`]);
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${REPORTS_SPREADSHEET_ID}/values:batchGet?ranges=${ranges.join('&ranges=')}&key=${API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Falha ao buscar dados dos relatórios.');
+            return response.json();
+        }
+
+        function processScheduleData(data) {
+            return TEAMS.map((team, index) => {
+                const peritoRaw = data.valueRanges[index * 5]?.values?.[0]?.[0] || 'N/A';
+                return {
+                    name: team.name.replace('[SPP] ', ''),
+                    isOmega: team.name.includes('Ômega'),
+                    peritoResponsavel: peritoRaw.replace(/Perito Responsável:\s*/i, '').trim(),
+                    tituloFiscalizacao: data.valueRanges[index * 5 + 1]?.values?.[0]?.[0] || 'Fiscalização',
+                    tituloPostagem: data.valueRanges[index * 5 + 2]?.values?.[0]?.[0] || 'Postagem',
+                    periodoReferencia: data.valueRanges[index * 5 + 3]?.values?.[0] || [],
+                    tableData: data.valueRanges[index * 5 + 4]?.values || [],
+                };
+            });
+        }
+
+        function processReportData(data) {
+            const fiscalizacoes = new Map(); const postagens = new Map(); const justificativas = new Map();
+            if (!data.valueRanges) return { fiscalizacoes, postagens, justificativas };
+            
+            data.valueRanges.forEach(rangeData => {
+                const rows = rangeData.values || [];
+                if (rangeData.range.includes('!C')) {
+                    rows.forEach(([timestamp, nick, , fiscDate]) => {
+                        if (nick && fiscDate) {
+                            if (!fiscalizacoes.has(fiscDate)) fiscalizacoes.set(fiscDate, []);
+                            fiscalizacoes.get(fiscDate).push(nick);
+                        }
+                        if (nick && timestamp) {
+                            const postDate = timestamp.split(' ')[0];
+                            if (!postagens.has(postDate)) postagens.set(postDate, []);
+                            postagens.get(postDate).push(nick);
+                        }
+                    });
+                } else if (rangeData.range.includes('!N')) {
+                     rows.forEach(([nick, , justifDate]) => {
+                        if (nick && justifDate) {
+                            if(!justificativas.has(justifDate)) justificativas.set(justifDate, []);
+                            justificativas.get(justifDate).push(nick);
+                        }
+                     });
+                }
+            });
+            return { fiscalizacoes, postagens, justificativas };
+        }
+
+        function getStatus(assignedNick, dateStr, type, maps, deadlineOverrideDateStr = null) {
+            if (type === 'fiscalizacao' && assignedNick.toLowerCase() === 'perito') {
+                return { class: '', tooltip: '' };
+            }
+            if (!dateStr || dateStr === '-') return { class: '', tooltip: '' };
+
+            const scheduleDate = parseDate(dateStr);
+            if (!scheduleDate) return { class: '', tooltip: '' };
+
+            const deadlineDate = deadlineOverrideDateStr ? parseDate(deadlineOverrideDateStr) : scheduleDate;
+            if(!deadlineDate) return { class: '', tooltip: '' };
+            
+            const completedMap = type === 'fiscalizacao' ? maps.fiscalizacoes : maps.postagens;
+
+            if (completedMap.has(dateStr) && completedMap.get(dateStr).includes(assignedNick)) {
+                return { class: 'status-feito', tooltip: 'Tarefa concluída' };
+            }
+            
+            if (maps.justificativas.has(dateStr) && maps.justificativas.get(dateStr).includes(assignedNick)) {
+                return { class: 'status-justificado', tooltip: 'Tarefa justificada' };
+            }
+
+            if (deadlineDate.getTime() === today.getTime()) {
+                return { class: 'status-hoje', tooltip: 'Prazo final hoje' };
+            }
+            
+            if (deadlineDate < today) {
+                return { class: 'status-pendente', tooltip: 'Tarefa pendente' };
+            }
+
+            return { class: '', tooltip: '' };
+        }
+
+        function renderTeamSchedule(teamData, activityMaps) {
+            const teamElement = document.createElement('div');
+            teamElement.className = 'glass-card text-white p-6';
+            
+            const tableHeaders = teamData.tableData[0] || [];
+            const tableRowsData = teamData.tableData.slice(1);
+            
+            const analistasResponsaveis = tableRowsData.filter(r => r[0] && r[0].toLowerCase() !== 'perito').map(r => r[0]).join(', ');
+
+            let tableRowsHTML = tableRowsData.map(row => {
+                const nick = row[0] || ''; if (!nick) return '';
+                
+                const effectiveNick = nick.toLowerCase() === 'perito' ? teamData.peritoResponsavel : nick;
+
+                const fisc1 = row[3] || '-'; const fisc2 = row[4] || '-';
+                const post1 = row[6] || '-'; const post2 = row[7] || '-';
+                
+                let sFisc1 = getStatus(effectiveNick, fisc1, 'fiscalizacao', activityMaps, post1);
+                let sFisc2 = getStatus(effectiveNick, fisc2, 'fiscalizacao', activityMaps, post2);
+                let sPost1 = getStatus(effectiveNick, post1, 'postagem', activityMaps);
+                let sPost2 = getStatus(effectiveNick, post2, 'postagem', activityMaps);
+                
+                return `<tr class="border-b border-white/10 ${nick.toLowerCase() === 'perito' ? 'perito-row' : ''}">
+                            <td class="py-3 px-4 font-medium border-r border-white/10">${nick}</td>
+                            <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${sFisc1.class}" title="${sFisc1.tooltip}">${fisc1}</span></td>
+                            <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${sFisc2.class}" title="${sFisc2.tooltip}">${fisc2}</span></td>
+                            <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${sPost1.class}" title="${sPost1.tooltip}">${post1}</span></td>
+                            <td class="p-1 text-center"><span class="status-cell inline-block w-full p-2 ${sPost2.class}" title="${sPost2.tooltip}">${post2}</span></td>
+                        </tr>`;
+            }).join('');
+            
+            const periodoRef = teamData.periodoReferencia.length > 1 ? `${teamData.periodoReferencia[0]} a ${teamData.periodoReferencia[1]}` : 'N/A';
+            
+            teamElement.innerHTML = `
+                <h3 class="text-3xl font-bold text-center text-white mb-2 drop-shadow-md">${teamData.name}</h3>
+                <p class="text-center text-purple-300 mb-6"><strong>Perito Responsável:</strong> ${teamData.peritoResponsavel}</p>
+                <div class="bg-black/20 p-4 rounded-xl">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-4 p-2 bg-black/20 rounded-lg items-center">
+                        <div><strong class="text-purple-300">Analistas Responsáveis:</strong><br>${analistasResponsaveis || 'Nenhum'}</div>
+                        <div class="font-bold text-lg">${teamData.tituloFiscalizacao}</div><div class="font-bold text-lg">${teamData.tituloPostagem}</div>
+                    </div>
+                    <div class="overflow-x-auto"><table class="min-w-full text-sm">
+                        <thead class="bg-black/30"><tr>
+                            <th class="py-2 px-4 text-left border-r border-white/10">${tableHeaders[0] || 'Membro'}</th>
+                            <th class="py-2 px-4 border-r border-white/10">${tableHeaders[3] || 'Fisc. 1'}</th>
+                            <th class="py-2 px-4 border-r border-white/10">${tableHeaders[4] || 'Fisc. 2'}</th>
+                            <th class="py-2 px-4 border-r border-white/10">${tableHeaders[6] || 'Post. 1'}</th>
+                            <th class="py-2 px-4">${tableHeaders[7] || 'Post. 2'}</th>
+                        </tr></thead><tbody>${tableRowsHTML}</tbody>
+                    </table></div>
+                </div>
+                <div class="text-right text-xs text-purple-300 mt-4 pr-2"><strong>Período de Referência:</strong> ${periodoRef}</div>
+            `;
+            scheduleContainer.appendChild(teamElement);
+        }
+
+        function renderOmegaTeam(teamData) {
+            const teamElement = document.createElement('div');
+            teamElement.className = 'glass-card text-white p-6';
+            const nicksHTML = teamData.tableData.map(row => row[0] ? `<li class="bg-black/20 p-3 rounded-lg">${row[0]}</li>` : '').join('');
+            teamElement.innerHTML = `
+                <h3 class="text-3xl font-bold text-center text-cyan-400 mb-2 drop-shadow-md">${teamData.name}</h3>
+                <p class="text-center text-gray-300 mb-6"><strong>Perito Responsável:</strong> ${teamData.peritoResponsavel}</p>
+                <div class="bg-black/20 p-4 rounded-xl">
+                    <h4 class="font-semibold text-lg text-center mb-3">Membros da Equipe</h4>
+                    <ul class="space-y-2 text-center">${nicksHTML}</ul>
+                </div>
+                <div class="text-center mt-6">
+                    <a href="https://www.policiarcc.com/t31666-spp-orientacoes-aos-analistas" target="_blank" rel="noopener noreferrer" class="inline-block bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-lg">
+                        <i class="fas fa-book-open mr-2"></i>Orientações aos Analistas
+                    </a>
+                </div>`;
+            scheduleContainer.appendChild(teamElement);
+        }
+
+        window.addEventListener('load', fetchAllData);
+    </script>
+</body>
+</html>
