@@ -75,7 +75,6 @@
         .status-feito { background-color: rgba(34, 197, 94, 0.5); } /* green-500/50 */
         .status-hoje { background-color: rgba(250, 204, 21, 0.5); } /* yellow-400/50 */
         .status-justificado { background-color: rgba(59, 130, 246, 0.5); } /* blue-500/50 */
-        .status-coberto { background-color: rgba(20, 184, 166, 0.5); } /* teal-500/50 */
         .status-pendente { background-color: rgba(239, 68, 68, 0.5); } /* red-500/50 */
 
         /* Styles for new controls */
@@ -154,9 +153,8 @@
         <!-- Legend -->
         <div id="legend" class="glass-card p-4 mb-8 max-w-2xl mx-auto hidden">
             <h3 class="text-lg font-semibold text-center mb-3">Legenda de Cores</h3>
-            <ul class="grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-2 text-sm text-center">
+            <ul class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 text-sm text-center">
                 <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-feito"></span> Feito</li>
-                <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-coberto"></span> Coberto</li>
                 <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-hoje"></span> Hoje</li>
                 <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-pendente"></span> Pendente</li>
                 <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-justificado"></span> Justificado</li>
@@ -314,7 +312,6 @@
 
         async function fetchReportData() {
             const reportTeams = TEAMS.filter(t => t.reportTab);
-            // Fetch C to F to include the coverage column E
             const ranges = reportTeams.flatMap(t => [`'${t.reportTab}'!C14:F400`, `'${t.reportTab}'!N14:P400`]);
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${REPORTS_SPREADSHEET_ID}/values:batchGet?ranges=${ranges.join('&ranges=')}&key=${API_KEY}`;
             const response = await fetch(url);
@@ -342,52 +339,42 @@
             const fiscalizacoes = new Map(); 
             const postagens = new Map(); 
             const justificativas = new Map();
-            const coberturas = new Map();
 
-            if (!data.valueRanges) return { fiscalizacoes, postagens, justificativas, coberturas };
+            if (!data.valueRanges) return { fiscalizacoes, postagens, justificativas };
             
             data.valueRanges.forEach(rangeData => {
                 const rows = rangeData.values || [];
-                // Process Fiscalização, Cobertura, Postagem
                 if (rangeData.range.includes('!C')) {
-                    rows.forEach(([timestamp, nick, memberCovered, fiscDate]) => {
+                    rows.forEach(([timestamp, nick, , fiscDate]) => {
                         const trimmedNick = nick ? nick.trim() : '';
-                        const trimmedMemberCovered = memberCovered ? memberCovered.trim() : '';
                         const trimmedFiscDate = fiscDate ? fiscDate.trim() : '';
 
                         if (trimmedNick && trimmedFiscDate) {
+                            const nickLower = trimmedNick.toLowerCase();
                             if (!fiscalizacoes.has(trimmedFiscDate)) fiscalizacoes.set(trimmedFiscDate, []);
-                            fiscalizacoes.get(trimmedFiscDate).push(trimmedNick);
-
-                            if(trimmedMemberCovered && trimmedMemberCovered !== '') {
-                                 // A coverage applies to a specific person on a specific date
-                                 const key = `${trimmedFiscDate}-${trimmedMemberCovered}`;
-                                 coberturas.set(key, { coveredBy: trimmedNick });
-                            }
+                            fiscalizacoes.get(trimmedFiscDate).push(nickLower);
                         }
                         if (trimmedNick && timestamp) {
                             const postDate = timestamp.split(' ')[0];
                             if (!postagens.has(postDate)) postagens.set(postDate, []);
-                            postagens.get(postDate).push(trimmedNick);
+                            postagens.get(postDate).push(trimmedNick.toLowerCase());
                         }
                     });
-                // Process Justificativas
                 } else if (rangeData.range.includes('!N')) {
                      rows.forEach(([nick, , justifDate]) => {
                         const trimmedNick = nick ? nick.trim() : '';
                         const trimmedJustifDate = justifDate ? justifDate.trim() : '';
 
                         if (trimmedNick && trimmedJustifDate) {
-                            const key = `${trimmedJustifDate}-${trimmedNick}`;
+                            const key = `${trimmedJustifDate}-${trimmedNick.toLowerCase()}`;
                             if(!justificativas.has(key)) justificativas.set(key, true);
                         }
                      });
                 }
             });
-            return { fiscalizacoes, postagens, justificativas, coberturas };
+            return { fiscalizacoes, postagens, justificativas };
         }
         
-        // --- Status Logic ---
         function getStatus(assignedNick, dateStr, type, deadlineOverrideDateStr = null) {
             if (type === 'fiscalizacao' && assignedNick.toLowerCase() === 'perito') {
                 return { class: '', tooltip: 'Atividade do Perito' };
@@ -400,19 +387,14 @@
             const deadlineDate = deadlineOverrideDateStr ? parseDate(deadlineOverrideDateStr) : scheduleDate;
             if(!deadlineDate) return { class: '', tooltip: '' };
             
+            const nickLower = assignedNick.toLowerCase();
             const completedMap = type === 'fiscalizacao' ? activityMaps.fiscalizacoes : activityMaps.postagens;
 
-            if (completedMap.has(dateStr) && completedMap.get(dateStr).includes(assignedNick)) {
+            if (completedMap.has(dateStr) && completedMap.get(dateStr).includes(nickLower)) {
                 return { class: 'status-feito', tooltip: `Concluído por ${assignedNick} em ${dateStr}` };
             }
             
-            const coverageKey = `${dateStr}-${assignedNick}`;
-            if (type === 'fiscalizacao' && activityMaps.coberturas.has(coverageKey)) {
-                const coverage = activityMaps.coberturas.get(coverageKey);
-                return { class: 'status-coberto', tooltip: `Tarefa coberta por ${coverage.coveredBy}` };
-            }
-
-            const justificationKey = `${dateStr}-${assignedNick}`;
+            const justificationKey = `${dateStr}-${nickLower}`;
             if (activityMaps.justificativas.has(justificationKey)) {
                 return { class: 'status-justificado', tooltip: `Justificado por ${assignedNick} para ${dateStr}` };
             }
@@ -456,10 +438,7 @@
                         if (date === todayStr) {
                              hasAnyResponsibility = true;
                              const fiscDate = row[index === 0 ? 3 : 4]; 
-                             const isDoneBySelf = activityMaps.fiscalizacoes.has(fiscDate) && activityMaps.fiscalizacoes.get(fiscDate).includes(memberName);
-                             const coverageKey = `${fiscDate}-${memberName}`;
-                             const isCoveredByOther = activityMaps.coberturas.has(coverageKey);
-                             const isCompleted = isDoneBySelf || isCoveredByOther;
+                             const isCompleted = activityMaps.fiscalizacoes.has(fiscDate) && activityMaps.fiscalizacoes.get(fiscDate).includes(memberName.toLowerCase());
                              
                              if (!todaysPosters.some(p => p.name === memberName)) {
                                  todaysPosters.push({ name: memberName, completed: isCompleted });
@@ -494,7 +473,6 @@
         }
 
         function renderWarnings(schedule) {
-            const container = document.getElementById('warnings-modal'); // The modal itself
             const list = document.getElementById('warnings-list');
             const warnings = [];
 
@@ -510,18 +488,17 @@
                     const memberName = isPeritoRow ? teamData.peritoResponsavel : nick;
 
                     const tasks = [
-                        { name: 'Fiscalização 1', fiscDate: row[3], postDate: row[6] },
-                        { name: 'Fiscalização 2', fiscDate: row[4], postDate: row[7] }
+                        { fiscDate: row[3], postDate: row[6] },
+                        { fiscDate: row[4], postDate: row[7] }
                     ];
 
                     tasks.forEach(task => {
                         const deadline = parseDate(task.postDate);
                         if (deadline && deadline < today) {
-                            const isDoneBySelf = activityMaps.fiscalizacoes.has(task.fiscDate) && activityMaps.fiscalizacoes.get(task.fiscDate).includes(memberName);
-                            const justificationKey = `${task.fiscDate}-${memberName}`;
+                            const isDoneBySelf = activityMaps.fiscalizacoes.has(task.fiscDate) && activityMaps.fiscalizacoes.get(task.fiscDate).includes(memberName.toLowerCase());
+                            const justificationKey = `${task.fiscDate}-${memberName.toLowerCase()}`;
                             const isJustified = activityMaps.justificativas.has(justificationKey);
                             
-                            // A warning is issued if the task was not done by the member and not justified, regardless of coverage.
                             if (!isDoneBySelf && !isJustified) {
                                 warnings.push({
                                     nick: memberName,
@@ -537,18 +514,18 @@
 
             if (warnings.length > 0) {
                 list.innerHTML = warnings.map(w => `
-                    <li class="bg-red-900/40 p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center">
+                    <li class="bg-red-900/40 p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-2">
                         <div class="mb-2 sm:mb-0 text-center sm:text-left">
                             <strong class="text-yellow-300">${w.nick}</strong>
                             <span class="text-gray-300">(${w.team})</span>
                         </div>
                         <div class="text-sm text-gray-200 text-center sm:text-right">
-                           Tarefa de <strong>${w.fiscDate}</strong> com prazo em <strong>${w.postDate}</strong> não foi cumprida.
+                           Tarefa de <strong>${w.fiscDate}</strong> com prazo em <strong>${w.postDate}</strong> não cumprida.
                         </div>
                     </li>
                 `).join('');
             } else {
-                 list.innerHTML = `<li class="text-green-400 text-center">Nenhuma advertência pendente. Todos estão em dia!</li>`;
+                 list.innerHTML = `<li class="text-green-400 text-center p-4">Nenhuma advertência pendente. Todos em dia!</li>`;
             }
         }
 
