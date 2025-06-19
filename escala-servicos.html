@@ -75,6 +75,7 @@
         .status-feito { background-color: rgba(34, 197, 94, 0.5); } /* green-500/50 */
         .status-hoje { background-color: rgba(250, 204, 21, 0.5); } /* yellow-400/50 */
         .status-justificado { background-color: rgba(59, 130, 246, 0.5); } /* blue-500/50 */
+        .status-coberto { background-color: rgba(20, 184, 166, 0.5); } /* teal-500/50 */
         .status-pendente { background-color: rgba(239, 68, 68, 0.5); } /* red-500/50 */
 
         /* Styles for new controls */
@@ -153,8 +154,9 @@
         <!-- Legend -->
         <div id="legend" class="glass-card p-4 mb-8 max-w-2xl mx-auto hidden">
             <h3 class="text-lg font-semibold text-center mb-3">Legenda de Cores</h3>
-            <ul class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 text-sm text-center">
+            <ul class="grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-2 text-sm text-center">
                 <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-feito"></span> Feito</li>
+                <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-coberto"></span> Coberto</li>
                 <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-hoje"></span> Hoje</li>
                 <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-pendente"></span> Pendente</li>
                 <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-justificado"></span> Justificado</li>
@@ -185,10 +187,31 @@
         </div>
     </footer>
 
-    <!-- Help Button -->
-    <button id="help-btn" class="fixed bottom-6 right-6 z-40 h-14 w-14 bg-purple-600 hover:bg-purple-700 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110" title="Ajuda">
-        <i class="fas fa-question text-2xl"></i>
-    </button>
+    <!-- Floating Action Buttons -->
+    <div class="fixed bottom-6 right-6 z-40 flex flex-col gap-4">
+        <button id="warnings-btn" class="h-14 w-14 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110" title="Painel de Advertências">
+            <i class="fas fa-triangle-exclamation text-2xl"></i>
+        </button>
+        <button id="help-btn" class="h-14 w-14 bg-purple-600 hover:bg-purple-700 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110" title="Ajuda">
+            <i class="fas fa-question text-2xl"></i>
+        </button>
+    </div>
+
+    <!-- Warnings Modal -->
+    <div id="warnings-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+        <div class="glass-card max-w-2xl w-full m-4 p-6 rounded-2xl">
+             <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold text-white"><i class="fas fa-triangle-exclamation mr-2 text-yellow-300"></i>Painel de Advertências</h3>
+                <button id="close-warnings-btn" class="text-gray-300 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div id="warnings-list-container" class="max-h-[60vh] overflow-y-auto pr-2">
+                <ul id="warnings-list" class="space-y-3">
+                    <!-- JS will populate this list -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Help Modal -->
     <div id="help-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
@@ -268,6 +291,7 @@
                 
                 renderControls();
                 renderTodaysResponsibilities(processedSchedule);
+                renderWarnings(processedSchedule);
                 displaySchedules('all');
                 
                 legendEl.classList.remove('hidden');
@@ -290,6 +314,7 @@
 
         async function fetchReportData() {
             const reportTeams = TEAMS.filter(t => t.reportTab);
+            // Fetch C to F to include the coverage column E
             const ranges = reportTeams.flatMap(t => [`'${t.reportTab}'!C14:F400`, `'${t.reportTab}'!N14:P400`]);
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${REPORTS_SPREADSHEET_ID}/values:batchGet?ranges=${ranges.join('&ranges=')}&key=${API_KEY}`;
             const response = await fetch(url);
@@ -314,33 +339,52 @@
         }
 
         function processReportData(data) {
-            const fiscalizacoes = new Map(); const postagens = new Map(); const justificativas = new Map();
-            if (!data.valueRanges) return { fiscalizacoes, postagens, justificativas };
+            const fiscalizacoes = new Map(); 
+            const postagens = new Map(); 
+            const justificativas = new Map();
+            const coberturas = new Map();
+
+            if (!data.valueRanges) return { fiscalizacoes, postagens, justificativas, coberturas };
             
             data.valueRanges.forEach(rangeData => {
                 const rows = rangeData.values || [];
+                // Process Fiscalização, Cobertura, Postagem
                 if (rangeData.range.includes('!C')) {
-                    rows.forEach(([timestamp, nick, , fiscDate]) => {
-                        if (nick && fiscDate) {
-                            if (!fiscalizacoes.has(fiscDate)) fiscalizacoes.set(fiscDate, []);
-                            fiscalizacoes.get(fiscDate).push(nick);
+                    rows.forEach(([timestamp, nick, memberCovered, fiscDate]) => {
+                        const trimmedNick = nick ? nick.trim() : '';
+                        const trimmedMemberCovered = memberCovered ? memberCovered.trim() : '';
+                        const trimmedFiscDate = fiscDate ? fiscDate.trim() : '';
+
+                        if (trimmedNick && trimmedFiscDate) {
+                            if (!fiscalizacoes.has(trimmedFiscDate)) fiscalizacoes.set(trimmedFiscDate, []);
+                            fiscalizacoes.get(trimmedFiscDate).push(trimmedNick);
+
+                            if(trimmedMemberCovered && trimmedMemberCovered !== '') {
+                                 // A coverage applies to a specific person on a specific date
+                                 const key = `${trimmedFiscDate}-${trimmedMemberCovered}`;
+                                 coberturas.set(key, { coveredBy: trimmedNick });
+                            }
                         }
-                        if (nick && timestamp) {
+                        if (trimmedNick && timestamp) {
                             const postDate = timestamp.split(' ')[0];
                             if (!postagens.has(postDate)) postagens.set(postDate, []);
-                            postagens.get(postDate).push(nick);
+                            postagens.get(postDate).push(trimmedNick);
                         }
                     });
+                // Process Justificativas
                 } else if (rangeData.range.includes('!N')) {
                      rows.forEach(([nick, , justifDate]) => {
-                        if (nick && justifDate) {
-                            if(!justificativas.has(justifDate)) justificativas.set(justifDate, []);
-                            justificativas.get(justifDate).push(nick);
+                        const trimmedNick = nick ? nick.trim() : '';
+                        const trimmedJustifDate = justifDate ? justifDate.trim() : '';
+
+                        if (trimmedNick && trimmedJustifDate) {
+                            const key = `${trimmedJustifDate}-${trimmedNick}`;
+                            if(!justificativas.has(key)) justificativas.set(key, true);
                         }
                      });
                 }
             });
-            return { fiscalizacoes, postagens, justificativas };
+            return { fiscalizacoes, postagens, justificativas, coberturas };
         }
         
         // --- Status Logic ---
@@ -362,7 +406,14 @@
                 return { class: 'status-feito', tooltip: `Concluído por ${assignedNick} em ${dateStr}` };
             }
             
-            if (activityMaps.justificativas.has(dateStr) && activityMaps.justificativas.get(dateStr).includes(assignedNick)) {
+            const coverageKey = `${dateStr}-${assignedNick}`;
+            if (type === 'fiscalizacao' && activityMaps.coberturas.has(coverageKey)) {
+                const coverage = activityMaps.coberturas.get(coverageKey);
+                return { class: 'status-coberto', tooltip: `Tarefa coberta por ${coverage.coveredBy}` };
+            }
+
+            const justificationKey = `${dateStr}-${assignedNick}`;
+            if (activityMaps.justificativas.has(justificationKey)) {
                 return { class: 'status-justificado', tooltip: `Justificado por ${assignedNick} para ${dateStr}` };
             }
 
@@ -399,13 +450,16 @@
                     const isPeritoRow = nick.toLowerCase() === 'perito';
                     const memberName = isPeritoRow ? teamData.peritoResponsavel : nick;
         
-                    const postDates = [row[6], row[7]]; // Check only postagem columns
+                    const postDates = [row[6], row[7]];
                     
-                    postDates.forEach(date => {
+                    postDates.forEach((date, index) => {
                         if (date === todayStr) {
                              hasAnyResponsibility = true;
-                             const isCompleted = activityMaps.postagens.has(todayStr) && 
-                                                 activityMaps.postagens.get(todayStr).includes(memberName);
+                             const fiscDate = row[index === 0 ? 3 : 4]; 
+                             const isDoneBySelf = activityMaps.fiscalizacoes.has(fiscDate) && activityMaps.fiscalizacoes.get(fiscDate).includes(memberName);
+                             const coverageKey = `${fiscDate}-${memberName}`;
+                             const isCoveredByOther = activityMaps.coberturas.has(coverageKey);
+                             const isCompleted = isDoneBySelf || isCoveredByOther;
                              
                              if (!todaysPosters.some(p => p.name === memberName)) {
                                  todaysPosters.push({ name: memberName, completed: isCompleted });
@@ -437,6 +491,65 @@
             }
             
             container.classList.remove('hidden');
+        }
+
+        function renderWarnings(schedule) {
+            const container = document.getElementById('warnings-modal'); // The modal itself
+            const list = document.getElementById('warnings-list');
+            const warnings = [];
+
+            schedule.forEach(teamData => {
+                if (teamData.isOmega) return;
+                const tableRowsData = teamData.tableData.slice(1);
+
+                tableRowsData.forEach(row => {
+                    const nick = row[0] || '';
+                    if (!nick) return;
+
+                    const isPeritoRow = nick.toLowerCase() === 'perito';
+                    const memberName = isPeritoRow ? teamData.peritoResponsavel : nick;
+
+                    const tasks = [
+                        { name: 'Fiscalização 1', fiscDate: row[3], postDate: row[6] },
+                        { name: 'Fiscalização 2', fiscDate: row[4], postDate: row[7] }
+                    ];
+
+                    tasks.forEach(task => {
+                        const deadline = parseDate(task.postDate);
+                        if (deadline && deadline < today) {
+                            const isDoneBySelf = activityMaps.fiscalizacoes.has(task.fiscDate) && activityMaps.fiscalizacoes.get(task.fiscDate).includes(memberName);
+                            const justificationKey = `${task.fiscDate}-${memberName}`;
+                            const isJustified = activityMaps.justificativas.has(justificationKey);
+                            
+                            // A warning is issued if the task was not done by the member and not justified, regardless of coverage.
+                            if (!isDoneBySelf && !isJustified) {
+                                warnings.push({
+                                    nick: memberName,
+                                    team: teamData.name,
+                                    fiscDate: task.fiscDate,
+                                    postDate: task.postDate
+                                });
+                            }
+                        }
+                    });
+                });
+            });
+
+            if (warnings.length > 0) {
+                list.innerHTML = warnings.map(w => `
+                    <li class="bg-red-900/40 p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center">
+                        <div class="mb-2 sm:mb-0 text-center sm:text-left">
+                            <strong class="text-yellow-300">${w.nick}</strong>
+                            <span class="text-gray-300">(${w.team})</span>
+                        </div>
+                        <div class="text-sm text-gray-200 text-center sm:text-right">
+                           Tarefa de <strong>${w.fiscDate}</strong> com prazo em <strong>${w.postDate}</strong> não foi cumprida.
+                        </div>
+                    </li>
+                `).join('');
+            } else {
+                 list.innerHTML = `<li class="text-green-400 text-center">Nenhuma advertência pendente. Todos estão em dia!</li>`;
+            }
         }
 
         function renderControls() {
@@ -623,25 +736,23 @@
             }
         });
 
-        // --- Help Modal Listeners ---
-        const helpBtn = document.getElementById('help-btn');
-        const helpModal = document.getElementById('help-modal');
-        const closeHelpBtn = document.getElementById('close-help-btn');
+        // --- Modal Listeners ---
+        function setupModal(buttonId, modalId, closeButtonId) {
+            const button = document.getElementById(buttonId);
+            const modal = document.getElementById(modalId);
+            const closeButton = document.getElementById(closeButtonId);
 
-        helpBtn.addEventListener('click', () => {
-            helpModal.classList.remove('hidden');
-        });
+            button.addEventListener('click', () => modal.classList.remove('hidden'));
+            closeButton.addEventListener('click', () => modal.classList.add('hidden'));
+            modal.addEventListener('click', (e) => {
+                if (e.target.id === modalId) {
+                    modal.classList.add('hidden');
+                }
+            });
+        }
 
-        closeHelpBtn.addEventListener('click', () => {
-            helpModal.classList.add('hidden');
-        });
-
-        helpModal.addEventListener('click', (e) => {
-            // Close modal if clicking on the backdrop
-            if (e.target.id === 'help-modal') {
-                helpModal.classList.add('hidden');
-            }
-        });
+        setupModal('help-btn', 'help-modal', 'close-help-btn');
+        setupModal('warnings-btn', 'warnings-modal', 'close-warnings-btn');
 
     </script>
 </body>
