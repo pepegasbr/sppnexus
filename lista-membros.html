@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPP - Lista de Membros</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        /* Style for the dropdown icon */
+        details[open] summary .fa-chevron-down {
+            transform: rotate(180deg);
+        }
+        summary .fa-chevron-down {
+            transition: transform 0.2s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-shield-halved text-3xl text-blue-600 mr-3"></i>
+                    <h1 class="text-2xl font-bold text-gray-800">Serviço de Proteção dos Professores</h1>
+                </div>
+                <nav>
+                    <a href="./index.html" class="text-gray-600 hover:text-blue-600 font-semibold px-3 py-2">Voltar à Página Inicial</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-12">
+        
+        <!-- Loading Spinner -->
+        <div id="loading" class="text-center py-10">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
+            <p class="mt-2 text-gray-600">Carregando membros...</p>
+        </div>
+        
+        <!-- Active Members Section -->
+        <div id="active-members-section" class="hidden">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 pb-2 border-b-2 border-gray-200">Lista de Membros Ativos</h2>
+            <div id="active-members-container" class="overflow-x-auto">
+                <!-- A tabela de membros ativos será inserida aqui pelo JavaScript -->
+            </div>
+        </div>
+
+        <!-- On-Leave Members Section -->
+        <div id="on-leave-members-section" class="hidden">
+            <h2 class="text-3xl font-bold text-gray-800 mt-12 mb-6 pb-2 border-b-2 border-gray-200">Membros em Licença</h2>
+            <div id="on-leave-members-container">
+                <!-- Os dropdowns de membros em licença serão inseridos aqui pelo JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Error Message Container -->
+        <div id="error-container"></div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white mt-12">
+        <div class="container mx-auto px-6 py-4 text-center text-gray-600">
+            &copy; 2024 Serviço de Proteção dos Professores. Todos os direitos reservados.
+        </div>
+    </footer>
+
+    <script>
+        // --- Configuration ---
+        const API_KEY = 'AIzaSyBQhWdy4iyFCk9Lh89x8weSIyl0knXgA34';
+        const SPREADSHEET_ID = '1kFnRqlQ-8Bzlv578t9uC_T0C74jjsK3nbzBgRFTlAJM';
+        const SHEET_NAME = 'Gerador';
+        // Range from column B (Cargo) to H (Término da Licença), rows 16 to 37.
+        const RANGE = 'B16:H37';
+        const FULL_RANGE = `${SHEET_NAME}!${RANGE}`;
+        const API_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${FULL_RANGE}?key=${API_KEY}`;
+
+        // --- DOM Elements ---
+        const loadingEl = document.getElementById('loading');
+        const activeSection = document.getElementById('active-members-section');
+        const onLeaveSection = document.getElementById('on-leave-members-section');
+        const activeContainer = document.getElementById('active-members-container');
+        const onLeaveContainer = document.getElementById('on-leave-members-container');
+        const errorContainer = document.getElementById('error-container');
+
+        /**
+         * Fetches data from Google Sheets and triggers the display functions.
+         */
+        async function fetchAndDisplayMembers() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`Erro na API do Google Sheets: ${errorData.error.message}`);
+                }
+                const data = await response.json();
+                const rows = data.values || [];
+
+                // Process rows into member objects
+                const members = rows.map(row => ({
+                    cargo: row[0] || null,
+                    nick: row[1] || null,
+                    entrada: row[2] || 'N/A',
+                    promocao: row[3] || '',
+                    inicioLicenca: row[4] || '',
+                    // row[5] is column G, which is empty.
+                    terminoLicenca: row[6] || ''
+                })).filter(member => member.nick && member.cargo); // Filter out completely empty rows
+
+                const activeMembers = members.filter(m => !m.inicioLicenca.trim());
+                const onLeaveMembers = members.filter(m => m.inicioLicenca.trim());
+
+                renderActiveMembers(activeMembers, activeContainer);
+                renderOnLeaveMembers(onLeaveMembers, onLeaveContainer);
+
+                // Show sections only if they have content
+                if (activeMembers.length > 0) activeSection.classList.remove('hidden');
+                if (onLeaveMembers.length > 0) onLeaveSection.classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Erro ao buscar dados da planilha:', error);
+                errorContainer.innerHTML = `<p class="text-red-500 text-center bg-red-100 p-4 rounded-lg">Não foi possível carregar a lista de membros. Verifique o console para mais detalhes.</p>`;
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+
+        /**
+         * Renders the table of active members.
+         * @param {Array} members - Array of active member objects.
+         * @param {HTMLElement} container - The container element to render the table into.
+         */
+        function renderActiveMembers(members, container) {
+            if (members.length === 0) {
+                container.innerHTML = '<p class="text-gray-600 text-center p-4">Nenhum membro ativo no momento.</p>';
+                return;
+            }
+
+            const table = `
+                <div class="bg-white rounded-lg shadow-md">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase">Cargo</th>
+                                <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase">Nick</th>
+                                <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase">Data de Entrada</th>
+                                <th class="py-3 px-4 text-left text-sm font-semibold text-gray-700 uppercase">Última Promoção</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${members.map(member => `
+                                <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                    <td class="py-3 px-4">${member.cargo}</td>
+                                    <td class="py-3 px-4 font-medium text-gray-900">${member.nick}</td>
+                                    <td class="py-3 px-4 text-gray-600">${member.entrada}</td>
+                                    <td class="py-3 px-4 text-gray-600">${member.promocao || '-'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            container.innerHTML = table;
+        }
+
+        /**
+         * Renders dropdowns for members on leave.
+         * @param {Array} members - Array of on-leave member objects.
+         * @param {HTMLElement} container - The container element to render the dropdowns into.
+         */
+        function renderOnLeaveMembers(members, container) {
+            if (members.length === 0) {
+                container.innerHTML = '<p class="text-gray-600 text-center p-4">Nenhum membro em licença no momento.</p>';
+                return;
+            }
+
+            const dropdowns = members.map(member => `
+                <details class="bg-white shadow-md rounded-lg mb-3">
+                    <summary class="p-4 font-semibold text-lg cursor-pointer flex justify-between items-center list-none">
+                        <span>${member.nick} <span class="text-sm font-normal text-gray-500">(${member.cargo})</span></span>
+                        <i class="fas fa-chevron-down transition-transform"></i>
+                    </summary>
+                    <div class="p-4 border-t border-gray-200">
+                        <ul class="space-y-2 text-gray-700">
+                            <li><strong>Início da Licença:</strong> ${member.inicioLicenca}</li>
+                            <li><strong>Término da Licença:</strong> ${member.terminoLicenca}</li>
+                        </ul>
+                    </div>
+                </details>
+            `).join('');
+
+            container.innerHTML = dropdowns;
+        }
+
+        // --- Initial Load ---
+        window.addEventListener('load', fetchAndDisplayMembers);
+    </script>
+</body>
+</html>
