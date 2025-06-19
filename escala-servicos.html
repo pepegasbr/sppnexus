@@ -13,7 +13,7 @@
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        /* Estilos adaptados do seu exemplo */
+        /* Base styles */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -23,7 +23,6 @@
 
         html {
             height: 100%;
-            /* Tonalidade roxa mais escura e gradiente mais animado */
             background: linear-gradient(135deg, #1c052e, #2a0845, #1d0638);
             background-size: 300% 300%;
             background-attachment: fixed;
@@ -44,7 +43,7 @@
 
         /* Glassmorphism Card Style */
         .glass-card {
-            background: rgba(20, 2, 40, 0.45); /* Fundo roxo escuro translúcido */
+            background: rgba(20, 2, 40, 0.45);
             backdrop-filter: blur(12px) saturate(150%);
             -webkit-backdrop-filter: blur(12px) saturate(150%);
             border: 1px solid rgba(255, 255, 255, 0.15);
@@ -52,14 +51,23 @@
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
 
-        /* Destaque para a linha do Perito */
+        /* Highlight for Perito and searched user rows */
         .perito-row {
             background-color: rgba(45, 11, 66, 0.8) !important;
             color: #e9d5ff;
             font-weight: 600;
         }
+        
+        .highlight-row {
+             background-color: rgba(134, 44, 204, 0.7) !important;
+             box-shadow: 0 0 15px rgba(192, 132, 252, 0.5);
+             font-weight: 700;
+        }
+        tr.highlight-row td {
+            color: #fff !important;
+        }
 
-        /* Classes de status */
+        /* Status classes */
         .status-cell {
             transition: background-color 0.3s ease;
             border-radius: 4px;
@@ -68,6 +76,23 @@
         .status-hoje { background-color: rgba(250, 204, 21, 0.5); } /* yellow-400/50 */
         .status-justificado { background-color: rgba(59, 130, 246, 0.5); } /* blue-500/50 */
         .status-pendente { background-color: rgba(239, 68, 68, 0.5); } /* red-500/50 */
+
+        /* Styles for new controls */
+        .control-btn {
+            transition: all 0.3s ease;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .control-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        .control-btn.active {
+            background-color: #a855f7; /* purple-500 */
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.7);
+        }
 
     </style>
 </head>
@@ -82,16 +107,39 @@
                     <h1 class="text-xl md:text-2xl font-bold text-white">Serviço de Proteção dos Professores</h1>
                 </div>
                 <nav>
-                    <a href="./index.html" class="text-gray-200 hover:text-white font-semibold px-3 py-2">Voltar à Página Inicial</a>
+                    <a href="#" class="text-gray-200 hover:text-white font-semibold px-3 py-2">Voltar à Página Inicial</a>
                 </nav>
             </div>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-6 py-12">
-        <h2 class="text-4xl font-bold text-white mb-4 text-center drop-shadow-lg">Escala de Serviços</h2>
+    <main class="container mx-auto px-4 sm:px-6 py-12">
+        <h2 class="text-4xl font-bold text-white mb-8 text-center drop-shadow-lg">Escala de Serviços</h2>
         
+        <!-- Controls: Filters and Search -->
+        <div id="controls-container" class="glass-card p-4 mb-8 max-w-5xl mx-auto">
+            <div class="flex flex-col lg:flex-row gap-6">
+                <!-- Team Filter Buttons -->
+                <div class="flex-grow">
+                    <label class="block text-sm font-semibold mb-2 text-purple-300">Filtrar por equipe:</label>
+                    <div id="team-buttons" class="flex flex-wrap gap-2">
+                        <!-- Buttons will be injected by JS -->
+                    </div>
+                </div>
+                <!-- Search -->
+                <div class="lg:border-l lg:border-white/20 lg:pl-6">
+                     <label for="search-input" class="block text-sm font-semibold mb-2 text-purple-300">Pesquise seu nick:</label>
+                     <div class="flex gap-2">
+                         <input type="text" id="search-input" placeholder="Digite o nick ou perito..." class="w-full bg-black/20 rounded-md py-2 px-3 border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-500 transition">
+                         <button id="search-btn" class="control-btn font-semibold py-2 px-4 rounded-md">
+                             <i class="fas fa-search"></i>
+                         </button>
+                     </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Legend -->
         <div id="legend" class="glass-card p-4 mb-8 max-w-2xl mx-auto hidden">
             <h3 class="text-lg font-semibold text-center mb-3">Legenda de Cores</h3>
@@ -108,14 +156,15 @@
             <i class="fas fa-spinner fa-spin text-4xl text-white"></i>
             <p class="mt-2 text-white/80">Carregando e verificando escalas...</p>
         </div>
+        
+        <!-- Messages Container -->
+        <div id="message-container" class="text-center py-10"></div>
 
         <!-- Schedule Container -->
         <div id="schedule-container" class="space-y-12">
             <!-- As escalas das equipes serão inseridas aqui -->
         </div>
 
-        <!-- Error Message Container -->
-        <div id="error-container"></div>
     </main>
 
     <!-- Footer -->
@@ -138,17 +187,23 @@
             { name: '[SPP] Equipe Delta', reportTab: 'Equipe Delta', range: 'C13:J17' },
             { name: '[SPP] Equipe Ômega', reportTab: null, range: 'C14:C16' }
         ];
+        
+        // --- Global State ---
+        let processedSchedule = [];
+        let activityMaps = {};
 
         // --- DOM Elements ---
         const loadingEl = document.getElementById('loading');
         const legendEl = document.getElementById('legend');
         const scheduleContainer = document.getElementById('schedule-container');
-        const errorContainer = document.getElementById('error-container');
+        const messageContainer = document.getElementById('message-container');
+        const teamButtonsContainer = document.getElementById('team-buttons');
+        const searchInput = document.getElementById('search-input');
+        const searchBtn = document.getElementById('search-btn');
 
         // --- Date Helper ---
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const todayStr = today.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
         function parseDate(dateStr) {
             if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return null;
@@ -158,27 +213,21 @@
             return date;
         }
 
+        // --- Data Fetching and Processing ---
         async function fetchAllData() {
             try {
                 const [scheduleData, reportData] = await Promise.all([ fetchScheduleData(), fetchReportData() ]);
-                const activityMaps = processReportData(reportData);
-                const schedule = processScheduleData(scheduleData);
-                scheduleContainer.innerHTML = '';
-                legendEl.classList.remove('hidden');
+                activityMaps = processReportData(reportData);
+                processedSchedule = processScheduleData(scheduleData);
                 
-                schedule.forEach(teamData => {
-                    if (teamData.isOmega && teamData.tableData.every(row => !row[0])) {
-                        return; // Don't render Omega if it's empty
-                    }
-                    if (teamData.isOmega) {
-                        renderOmegaTeam(teamData);
-                    } else {
-                        renderTeamSchedule(teamData, activityMaps);
-                    }
-                });
+                renderControls();
+                displaySchedules('all'); // Show all teams initially
+                
+                legendEl.classList.remove('hidden');
+
             } catch (error) {
                 console.error('Erro ao buscar ou processar dados:', error);
-                errorContainer.innerHTML = `<div class="glass-card text-red-300 text-center p-4"><p>Não foi possível carregar as escalas. Verifique o console para mais detalhes.</p></div>`;
+                messageContainer.innerHTML = `<div class="glass-card text-red-300 text-center p-4"><p>Não foi possível carregar as escalas. Tente recarregar a página.</p><p class="text-xs mt-2">${error.message}</p></div>`;
             } finally {
                 loadingEl.style.display = 'none';
             }
@@ -205,6 +254,7 @@
             return TEAMS.map((team, index) => {
                 const peritoRaw = data.valueRanges[index * 5]?.values?.[0]?.[0] || 'N/A';
                 return {
+                    id: team.name,
                     name: team.name.replace('[SPP] ', ''),
                     isOmega: team.name.includes('Ômega'),
                     peritoResponsavel: peritoRaw.replace(/Perito Responsável:\s*/i, '').trim(),
@@ -245,10 +295,11 @@
             });
             return { fiscalizacoes, postagens, justificativas };
         }
-
-        function getStatus(assignedNick, dateStr, type, maps, deadlineOverrideDateStr = null) {
+        
+        // --- Status Logic ---
+        function getStatus(assignedNick, dateStr, type, deadlineOverrideDateStr = null) {
             if (type === 'fiscalizacao' && assignedNick.toLowerCase() === 'perito') {
-                return { class: '', tooltip: '' };
+                return { class: '', tooltip: 'Atividade do Perito' };
             }
             if (!dateStr || dateStr === '-') return { class: '', tooltip: '' };
 
@@ -258,30 +309,76 @@
             const deadlineDate = deadlineOverrideDateStr ? parseDate(deadlineOverrideDateStr) : scheduleDate;
             if(!deadlineDate) return { class: '', tooltip: '' };
             
-            const completedMap = type === 'fiscalizacao' ? maps.fiscalizacoes : maps.postagens;
+            const completedMap = type === 'fiscalizacao' ? activityMaps.fiscalizacoes : activityMaps.postagens;
 
             if (completedMap.has(dateStr) && completedMap.get(dateStr).includes(assignedNick)) {
-                return { class: 'status-feito', tooltip: 'Tarefa concluída' };
+                return { class: 'status-feito', tooltip: `Concluído por ${assignedNick} em ${dateStr}` };
             }
             
-            if (maps.justificativas.has(dateStr) && maps.justificativas.get(dateStr).includes(assignedNick)) {
-                return { class: 'status-justificado', tooltip: 'Tarefa justificada' };
+            if (activityMaps.justificativas.has(dateStr) && activityMaps.justificativas.get(dateStr).includes(assignedNick)) {
+                return { class: 'status-justificado', tooltip: `Justificado por ${assignedNick} para ${dateStr}` };
             }
 
             if (deadlineDate.getTime() === today.getTime()) {
-                return { class: 'status-hoje', tooltip: 'Prazo final hoje' };
+                return { class: 'status-hoje', tooltip: `Prazo final hoje (${dateStr})` };
             }
             
             if (deadlineDate < today) {
-                return { class: 'status-pendente', tooltip: 'Tarefa pendente' };
+                return { class: 'status-pendente', tooltip: `Pendente desde ${dateStr}` };
             }
 
-            return { class: '', tooltip: '' };
+            return { class: '', tooltip: `Prazo: ${dateStr}` };
+        }
+        
+        // --- Rendering ---
+        function renderControls() {
+            teamButtonsContainer.innerHTML = `<button class="control-btn active font-semibold py-2 px-4 rounded-md" data-team-id="all">Todas</button>`;
+            processedSchedule.forEach(team => {
+                 teamButtonsContainer.innerHTML += `<button class="control-btn font-semibold py-2 px-4 rounded-md" data-team-id="${team.id}">${team.name}</button>`;
+            });
         }
 
-        function renderTeamSchedule(teamData, activityMaps) {
+        function displaySchedules(teamIdFilter, highlightedNick = null) {
+            scheduleContainer.innerHTML = '';
+            messageContainer.innerHTML = '';
+            
+            document.querySelectorAll('#team-buttons .control-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.teamId === teamIdFilter);
+            });
+            
+            if(teamIdFilter !== 'all' && !highlightedNick) {
+                searchInput.value = '';
+            }
+            
+            const teamsToDisplay = teamIdFilter === 'all' 
+                ? processedSchedule 
+                : processedSchedule.filter(t => t.id === teamIdFilter);
+
+            if (teamsToDisplay.length === 0) {
+                 messageContainer.innerHTML = `<div class="glass-card text-yellow-300 text-center p-4"><p>Nenhum membro encontrado com o nick "${highlightedNick}".</p></div>`;
+                 return;
+            }
+
+            teamsToDisplay.forEach(teamData => {
+                const isOmegaEmpty = teamData.isOmega && teamData.tableData.every(row => !row[0]);
+
+                if (isOmegaEmpty) {
+                    const omegaMessage = document.createElement('div');
+                    omegaMessage.className = 'glass-card text-white p-6 text-center';
+                    omegaMessage.innerHTML = `<h3 class="text-3xl font-bold text-center text-cyan-400 mb-2 drop-shadow-md">${teamData.name}</h3><p class="text-cyan-200">A Equipe Ômega não possui escala para esta semana.</p>`;
+                    scheduleContainer.appendChild(omegaMessage);
+                } else {
+                    const teamElement = teamData.isOmega
+                        ? renderOmegaTeam(teamData, highlightedNick)
+                        : renderTeamSchedule(teamData, highlightedNick);
+                    scheduleContainer.appendChild(teamElement);
+                }
+            });
+        }
+
+        function renderTeamSchedule(teamData, highlightedNick = null) {
             const teamElement = document.createElement('div');
-            teamElement.className = 'glass-card text-white p-6';
+            teamElement.className = 'glass-card text-white p-4 sm:p-6';
             
             const tableHeaders = teamData.tableData[0] || [];
             const tableRowsData = teamData.tableData.slice(1);
@@ -291,17 +388,22 @@
             let tableRowsHTML = tableRowsData.map(row => {
                 const nick = row[0] || ''; if (!nick) return '';
                 
-                const effectiveNick = nick.toLowerCase() === 'perito' ? teamData.peritoResponsavel : nick;
+                const isPeritoRow = nick.toLowerCase() === 'perito';
+                const effectiveNick = isPeritoRow ? teamData.peritoResponsavel : nick;
+                const isHighlighted = highlightedNick && (
+                    (!isPeritoRow && nick.toLowerCase() === highlightedNick.toLowerCase()) ||
+                    (isPeritoRow && teamData.peritoResponsavel.toLowerCase() === highlightedNick.toLowerCase())
+                );
 
                 const fisc1 = row[3] || '-'; const fisc2 = row[4] || '-';
                 const post1 = row[6] || '-'; const post2 = row[7] || '-';
                 
-                let sFisc1 = getStatus(effectiveNick, fisc1, 'fiscalizacao', activityMaps, post1);
-                let sFisc2 = getStatus(effectiveNick, fisc2, 'fiscalizacao', activityMaps, post2);
-                let sPost1 = getStatus(effectiveNick, post1, 'postagem', activityMaps);
-                let sPost2 = getStatus(effectiveNick, post2, 'postagem', activityMaps);
+                let sFisc1 = getStatus(effectiveNick, fisc1, 'fiscalizacao', post1);
+                let sFisc2 = getStatus(effectiveNick, fisc2, 'fiscalizacao', post2);
+                let sPost1 = getStatus(effectiveNick, post1, 'postagem');
+                let sPost2 = getStatus(effectiveNick, post2, 'postagem');
                 
-                return `<tr class="border-b border-white/10 ${nick.toLowerCase() === 'perito' ? 'perito-row' : ''}">
+                return `<tr class="border-b border-white/10 ${isPeritoRow ? 'perito-row' : ''} ${isHighlighted ? 'highlight-row' : ''}">
                             <td class="py-3 px-4 font-medium border-r border-white/10">${nick}</td>
                             <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${sFisc1.class}" title="${sFisc1.tooltip}">${fisc1}</span></td>
                             <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${sFisc2.class}" title="${sFisc2.tooltip}">${fisc2}</span></td>
@@ -332,13 +434,19 @@
                 </div>
                 <div class="text-right text-xs text-purple-300 mt-4 pr-2"><strong>Período de Referência:</strong> ${periodoRef}</div>
             `;
-            scheduleContainer.appendChild(teamElement);
+            return teamElement;
         }
 
-        function renderOmegaTeam(teamData) {
+        function renderOmegaTeam(teamData, highlightedNick = null) {
             const teamElement = document.createElement('div');
             teamElement.className = 'glass-card text-white p-6';
-            const nicksHTML = teamData.tableData.map(row => row[0] ? `<li class="bg-black/20 p-3 rounded-lg">${row[0]}</li>` : '').join('');
+            const nicksHTML = teamData.tableData.map(row => {
+                const nick = row[0];
+                if (!nick) return '';
+                const isHighlighted = highlightedNick && nick.toLowerCase() === highlightedNick.toLowerCase();
+                return `<li class="bg-black/20 p-3 rounded-lg ${isHighlighted ? 'highlight-row' : ''}">${nick}</li>`;
+            }).join('');
+            
             teamElement.innerHTML = `
                 <h3 class="text-3xl font-bold text-center text-cyan-400 mb-2 drop-shadow-md">${teamData.name}</h3>
                 <p class="text-center text-gray-300 mb-6"><strong>Perito Responsável:</strong> ${teamData.peritoResponsavel}</p>
@@ -351,10 +459,60 @@
                         <i class="fas fa-book-open mr-2"></i>Orientações aos Analistas
                     </a>
                 </div>`;
-            scheduleContainer.appendChild(teamElement);
+            return teamElement;
         }
 
+        // --- Event Handlers ---
+        function handleSearch() {
+            const searchTerm = searchInput.value.trim().toLowerCase();
+            if (!searchTerm) {
+                displaySchedules('all');
+                return;
+            }
+
+            let found = false;
+            for (const team of processedSchedule) {
+                // Check if the Perito matches
+                if (team.peritoResponsavel.toLowerCase() === searchTerm) {
+                    displaySchedules(team.id, team.peritoResponsavel);
+                    found = true;
+                    break;
+                }
+
+                // Check if a member matches
+                const members = team.isOmega ? team.tableData : team.tableData.slice(1);
+                const foundMember = members.find(row => row[0] && row[0].toLowerCase() === searchTerm);
+
+                if (foundMember) {
+                    displaySchedules(team.id, foundMember[0]);
+                    found = true;
+                    break;
+                }
+            }
+            
+            if (!found) {
+                scheduleContainer.innerHTML = '';
+                messageContainer.innerHTML = `<div class="glass-card text-yellow-300 text-center p-4"><p>Nenhum membro ou perito encontrado com o nome "${searchInput.value}".</p></div>`;
+            }
+        }
+
+        // --- Event Listeners ---
         window.addEventListener('load', fetchAllData);
+
+        teamButtonsContainer.addEventListener('click', (e) => {
+            if (e.target.matches('button')) {
+                const teamId = e.target.dataset.teamId;
+                displaySchedules(teamId);
+            }
+        });
+
+        searchBtn.addEventListener('click', handleSearch);
+        searchInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                handleSearch();
+            }
+        });
+
     </script>
 </body>
 </html>
