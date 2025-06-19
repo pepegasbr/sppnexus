@@ -16,8 +16,6 @@
         /* Custom styles */
         body {
             font-family: 'Inter', sans-serif;
-        }
-        .main-container {
             background-color: #f0f2f5; /* Light gray background */
         }
         .card {
@@ -29,10 +27,10 @@
         }
     </style>
 </head>
-<body class="main-container">
+<body class="min-h-screen flex flex-col">
 
     <!-- Header -->
-    <header class="bg-white shadow-md">
+    <header class="bg-white shadow-md sticky top-0 z-50">
         <div class="container mx-auto px-6 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
@@ -40,15 +38,16 @@
                     <h1 class="text-2xl font-bold text-gray-800">Serviço de Proteção dos Professores</h1>
                 </div>
                 <nav>
-                    <a href="#" class="text-blue-600 border-b-2 border-blue-600 font-semibold px-3 py-2">Página Inicial</a>
-                    <!-- Outros links de navegação podem ser adicionados aqui -->
+                    <a href="index.html" class="text-blue-600 border-b-2 border-blue-600 font-semibold px-3 py-2">Página Inicial</a>
+                    <!-- Other navigation links can be added here -->
                 </nav>
             </div>
         </div>
     </header>
 
     <!-- Main Content -->
-    <main class="container mx-auto px-6 py-12">
+    <main class="container mx-auto px-6 py-12 flex-grow">
+
         <div class="text-center mb-12">
             <h2 class="text-4xl font-bold text-gray-800">Bem-vindo(a) ao Portal SPP</h2>
             <p class="text-gray-600 mt-2">Sua central de recursos e serviços de proteção.</p>
@@ -75,8 +74,8 @@
                 <p class="text-gray-600">Envie suas dúvidas, sugestões ou reclamações diretamente para a nossa equipe.</p>
             </a>
             
-            <!-- Card: Portal de Envio -->
-            <a href="#" class="card block bg-white p-6 rounded-lg shadow-md hover:bg-gray-50">
+            <!-- Card: Portal de Envio (now links to portalenvio.html) -->
+            <a href="portalenvio.html" class="card block bg-white p-6 rounded-lg shadow-md hover:bg-gray-50">
                 <div class="flex items-center mb-4">
                     <i class="fas fa-paper-plane text-2xl text-purple-500 mr-4"></i>
                     <h3 class="text-xl font-semibold text-gray-900">[SPP] Portal de Envio</h3>
@@ -85,7 +84,7 @@
             </a>
 
             <!-- Card: Lista de Membros -->
-            <a href="./lista-membros.html" class="card block bg-white p-6 rounded-lg shadow-md hover:bg-gray-50">
+            <a class='card block bg-white p-6 rounded-lg shadow-md hover:bg-gray-50' href='/lista-membros'>
                 <div class="flex items-center mb-4">
                     <i class="fas fa-users text-2xl text-yellow-500 mr-4"></i>
                     <h3 class="text-xl font-semibold text-gray-900">[SPP] Lista de Membros</h3>
@@ -94,7 +93,7 @@
             </a>
 
             <!-- Card: Escala de Serviços -->
-            <a href="./escala-servicos.html" class="card block bg-white p-6 rounded-lg shadow-md hover:bg-gray-50">
+            <a class='card block bg-white p-6 rounded-lg shadow-md hover:bg-gray-50' href='/escala-servicos'>
                 <div class="flex items-center mb-4">
                     <i class="fas fa-calendar-alt text-2xl text-red-500 mr-4"></i>
                     <h3 class="text-xl font-semibold text-gray-900">[SPP] Escala de Serviços</h3>
@@ -103,7 +102,7 @@
             </a>
 
             <!-- Card: Manual de Introdução -->
-            <a href="#" class="card block bg-white p-6 rounded-lg shadow-md hover:bg-gray-50">
+            <a href="https://bit.ly/manual_funcoes" target="_blank" rel="noopener noreferrer" class="card block bg-white p-6 rounded-lg shadow-md hover:bg-gray-50">
                 <div class="flex items-center mb-4">
                     <i class="fas fa-book-open text-2xl text-indigo-500 mr-4"></i>
                     <h3 class="text-xl font-semibold text-gray-900">[SPP] Manual de Introdução</h3>
