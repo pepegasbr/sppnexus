@@ -4,16 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SPP - Lista de Membros</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        /* Base styles */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -41,7 +37,6 @@
             min-height: 100vh;
         }
 
-        /* Glassmorphism Card Style */
         .glass-card {
             background: rgba(20, 2, 40, 0.45);
             backdrop-filter: blur(12px) saturate(150%);
@@ -51,7 +46,6 @@
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
 
-        /* Style for the dropdown icon */
         details[open] summary .fa-chevron-down {
             transform: rotate(180deg);
         }
@@ -59,7 +53,6 @@
             transition: transform 0.2s ease-in-out;
         }
 
-        /* Team Color Badges */
         .team-badge {
             padding: 0.25rem 0.75rem;
             border-radius: 9999px;
@@ -68,16 +61,15 @@
             display: inline-block;
             border: 1px solid transparent;
         }
-        .team-alpha { background-color: rgba(217, 70, 239, 0.2); border-color: rgba(217, 70, 239, 0.5); color: #f0abfc; } /* Fuchsia */
-        .team-beta { background-color: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); color: #93c5fd; } /* Blue */
-        .team-delta { background-color: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.5); color: #86efac; } /* Green */
-        .team-omega { background-color: rgba(234, 179, 8, 0.2); border-color: rgba(234, 179, 8, 0.5); color: #fde047; } /* Yellow */
-        .team-none { background-color: rgba(156, 163, 175, 0.2); border-color: rgba(156, 163, 175, 0.5); color: #d1d5db; } /* Gray */
+        .team-alpha { background-color: rgba(217, 70, 239, 0.2); border-color: rgba(217, 70, 239, 0.5); color: #f0abfc; }
+        .team-beta { background-color: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); color: #93c5fd; }
+        .team-delta { background-color: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.5); color: #86efac; }
+        .team-omega { background-color: rgba(234, 179, 8, 0.2); border-color: rgba(234, 179, 8, 0.5); color: #fde047; }
+        .team-none { background-color: rgba(156, 163, 175, 0.2); border-color: rgba(156, 163, 175, 0.5); color: #d1d5db; }
     </style>
 </head>
 <body class="text-white">
 
-    <!-- Header -->
     <header class="glass-card sticky top-0 z-50 m-4">
         <div class="container mx-auto px-6 py-4">
             <div class="flex items-center justify-between">
@@ -92,56 +84,45 @@
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="container mx-auto px-4 sm:px-6 py-12">
         <h2 class="text-4xl font-bold text-white mb-8 text-center drop-shadow-lg">Lista de Membros</h2>
         
-        <!-- Loading Spinner -->
         <div id="loading" class="text-center py-10">
             <i class="fas fa-spinner fa-spin text-4xl text-white"></i>
             <p class="mt-2 text-white/80">Carregando membros...</p>
         </div>
         
-        <!-- Active Members Section -->
         <div id="active-members-section" class="hidden">
             <h3 class="text-3xl font-bold text-white mb-6 pb-2 text-center drop-shadow-md">Membros Ativos</h3>
             <div id="active-members-container" class="overflow-x-auto">
-                <!-- The active members table will be inserted here by JavaScript -->
             </div>
         </div>
 
-        <!-- On-Leave Members Section -->
         <div id="on-leave-members-section" class="hidden mt-12">
             <h3 class="text-3xl font-bold text-white mt-12 mb-6 pb-2 text-center drop-shadow-md">Membros em Licença</h3>
             <div id="on-leave-members-container" class="max-w-3xl mx-auto">
-                <!-- The on-leave members dropdowns will be inserted here by JavaScript -->
             </div>
         </div>
         
-        <!-- Error Message Container -->
         <div id="error-container" class="mt-8"></div>
 
     </main>
 
-    <!-- Footer -->
     <footer class="glass-card mt-12 mx-4 mb-4">
         <div class="container mx-auto px-6 py-4 text-center text-white/70 text-sm">
-            <p class="mb-1">&copy; 2024 Serviço de Proteção dos Professores. Todos os direitos reservados.</p>
+            <p class="mb-1">&copy; 2025 Serviço de Proteção dos Professores. Todos os direitos reservados.</p>
             <p>Desenvolvido por <strong class="text-white/90">Pegas</strong> e idealizado por <strong class="text-white/90">Sr.Gabriel</strong>.</p>
         </div>
     </footer>
 
     <script>
-        // --- Configuration ---
         const API_KEY = 'AIzaSyBQhWdy4iyFCk9Lh89x8weSIyl0knXgA34';
         
-        // Config for Member List sheet
         const MEMBERS_SPREADSHEET_ID = '1kFnRqlQ-8Bzlv578t9uC_T0C74jjsK3nbzBgRFTlAJM';
         const MEMBERS_SHEET_NAME = 'Gerador';
-        const MEMBERS_RANGE = 'B16:I37'; // Updated range to include column I
+        const MEMBERS_RANGE = 'B16:I37';
         const MEMBERS_API_URL = `https://sheets.googleapis.com/v4/spreadsheets/${MEMBERS_SPREADSHEET_ID}/values/${MEMBERS_SHEET_NAME}!${MEMBERS_RANGE}?key=${API_KEY}`;
 
-        // Config for Schedule (Teams) sheet
         const SCHEDULE_SPREADSHEET_ID = '19u9h0OnF_BlD5w8rTE9zaksh3ImMemXFQm1oob_A1Eo';
         const TEAMS = [
             { name: '[SPP] Equipe Alpha', range: 'C13:J17' },
@@ -150,7 +131,6 @@
             { name: '[SPP] Equipe Ômega', range: 'C14:C16' }
         ];
 
-        // --- DOM Elements ---
         const loadingEl = document.getElementById('loading');
         const activeSection = document.getElementById('active-members-section');
         const onLeaveSection = document.getElementById('on-leave-members-section');
@@ -158,21 +138,14 @@
         const onLeaveContainer = document.getElementById('on-leave-members-container');
         const errorContainer = document.getElementById('error-container');
 
-        /**
-         * Parses a date string in "DD mon. YYYY" or "DD/MM/YYYY" format.
-         * @param {string} dateStr The date string.
-         * @returns {Date|null} A Date object or null if invalid.
-         */
         function parseDate(dateStr) {
             if (!dateStr || typeof dateStr !== 'string') return null;
 
-            // Try "DD/MM/YYYY" format first
             if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
                 const [day, month, year] = dateStr.split('/');
                 return new Date(year, month - 1, day);
             }
 
-            // Try "DD mon. YYYY" format
             const monthMap = {
                 'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3, 'mai': 4, 'jun': 5,
                 'jul': 6, 'ago': 7, 'set': 8, 'out': 9, 'nov': 10, 'dez': 11
@@ -196,9 +169,6 @@
         }
 
 
-        /**
-         * Fetches team and perito data from the schedule spreadsheet.
-         */
         async function fetchTeamData() {
             const ranges = TEAMS.flatMap(t => [`'${t.name}'!C9`, `'${t.name}'!${t.range}`]);
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${SCHEDULE_SPREADSHEET_ID}/values:batchGet?ranges=${ranges.join('&ranges=')}&key=${API_KEY}`;
@@ -208,9 +178,6 @@
             return data.valueRanges || [];
         }
 
-        /**
-         * Creates a map from a member's nick to their team name.
-         */
         function createNickToTeamMap(teamDataRanges) {
             const nickMap = new Map();
             for (let i = 0; i < teamDataRanges.length; i += 2) {
@@ -240,9 +207,6 @@
             return nickMap;
         }
 
-        /**
-         * Main function to fetch all data and display it.
-         */
         async function fetchAndDisplayMembers() {
             try {
                 const [membersResponse, teamData] = await Promise.all([
@@ -293,9 +257,6 @@
             }
         }
 
-        /**
-         * Renders the table of active members with team colors.
-         */
         function renderActiveMembers(members, container) {
             if (members.length === 0) {
                 container.innerHTML = '<div class="glass-card p-4 text-center text-white/80"><p>Nenhum membro ativo no momento.</p></div>';
@@ -339,9 +300,6 @@
             container.innerHTML = table;
         }
 
-        /**
-         * Renders dropdowns for members on leave with remaining days calculation.
-         */
         function renderOnLeaveMembers(members, container) {
             if (members.length === 0) {
                  container.innerHTML = '';
@@ -349,7 +307,7 @@
             }
 
             const today = new Date();
-            today.setHours(0, 0, 0, 0); // Normalize today's date for accurate comparison
+            today.setHours(0, 0, 0, 0);
 
             const dropdowns = members.map(member => {
                 let statusContent = '';
@@ -359,7 +317,7 @@
                     statusContent = `<li><strong class="text-purple-300">Status do Retorno:</strong> <span class="text-green-400 font-semibold">Retornou</span></li>`;
                 } else if (terminoDate) {
                     const deadlineDate = new Date(terminoDate);
-                    deadlineDate.setDate(deadlineDate.getDate() + 1); // Deadline is 1 day after the leave ends.
+                    deadlineDate.setDate(deadlineDate.getDate() + 1);
                     deadlineDate.setHours(0,0,0,0);
 
                     if (today > deadlineDate) {
@@ -371,7 +329,7 @@
                                 </span>
                             </li>`;
                     } else if (today.getTime() === deadlineDate.getTime()) {
-                         statusContent = `<li><strong class="text-purple-300">Dias restantes para o retorno:</strong> <span class="text-yellow-400 font-bold">Prazo final hoje</span></li>`;
+                        statusContent = `<li><strong class="text-purple-300">Dias restantes para o retorno:</strong> <span class="text-yellow-400 font-bold">Prazo final hoje</span></li>`;
                     } else {
                         const diffTime = deadlineDate.getTime() - today.getTime();
                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -379,7 +337,6 @@
                         statusContent = `<li><strong class="text-purple-300">Dias restantes para o retorno:</strong> ${diffDays} ${dayText}</li>`;
                     }
                 } else if(member.terminoLicenca) {
-                    // Handle cases where the date is present but in an invalid format
                     statusContent = `<li><strong class="text-purple-300">Status do Retorno:</strong> <span class="text-gray-400">Data de término inválida</span></li>`;
                 }
 
@@ -403,7 +360,6 @@
             container.innerHTML = dropdowns;
         }
 
-        // --- Initial Load ---
         window.addEventListener('load', fetchAndDisplayMembers);
     </script>
 </body>
