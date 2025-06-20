@@ -210,18 +210,18 @@
                 <button id="close-help-btn" class="text-gray-300 hover:text-white text-2xl">&times;</button>
             </div>
             <div class="space-y-4 text-gray-200">
-                <p>A escala mostra as datas das suas tarefas de <strong>Fiscalização</strong> e os prazos para a <strong>Postagem</strong> dos relatórios.</p>
+                <p>A escala mostra as <strong>Datas Analisadas</strong> e o prazo final para a <strong>Postagem</strong> dos seus relatórios.</p>
                 <div>
                     <h4 class="font-semibold text-purple-300">Passo a Passo:</h4>
                     <ol class="list-decimal list-inside mt-2 space-y-2">
                         <li><strong>Encontre seu nome:</strong> Localize sua linha na tabela da sua equipe.</li>
-                        <li><strong>Verifique as datas:</strong> Cada linha tem tarefas de Fiscalização (Fisc.) e de Postagem (Post.).</li>
-                        <li><strong>Entenda o prazo:</strong> A data na coluna "Postagem" é o <strong>prazo final</strong> para você realizar a "Fiscalização" correspondente.</li>
+                        <li><strong>Verifique suas tarefas:</strong> Cada tarefa (1ª e 2ª Fiscalização) tem uma "Data Analisada" e uma "Postagem" correspondente.</li>
+                        <li><strong>Entenda o prazo:</strong> A data na coluna "Postagem" é o <strong>prazo final</strong> para você analisar a "Data Analisada" e postar o relatório.</li>
                     </ol>
                 </div>
                 <div class="bg-black/20 p-3 rounded-lg">
                     <p><strong>Exemplo Prático:</strong></p>
-                    <p class="mt-1">Se sua <strong>Fisc. 1</strong> está agendada para o dia <strong>18/06</strong> e a <strong>Post. 1</strong> para <strong>19/06</strong>, isso significa que:</p>
+                    <p class="mt-1">Se sua 1ª Fiscalização tem <strong>Data Analisada 18/06</strong> e <strong>Postagem 19/06</strong>, isso significa que:</p>
                     <ul class="list-disc list-inside ml-4 mt-2">
                         <li>Você deve fiscalizar as atividades do dia <strong>18/06</strong>.</li>
                         <li>Seu prazo para fazer isso e postar o relatório termina no final do dia <strong>19/06</strong>.</li>
@@ -233,7 +233,7 @@
     </div>
 
     <script>
-        const API_KEY = 'AIzaSyBQhWdy4iyFCk9Lh89x8weSIyl0knXgA34';
+        const API_KEY = 'AIzaSyBQhWdy4iyFCk9Lh89x8weSIyl0knXgA34'; // IMPORTANT: Replace with your actual Google Sheets API Key
         const SCHEDULE_SPREADSHEET_ID = '19u9h0OnF_BlD5w8rTE9zaksh3ImMemXFQm1oob_A1Eo';
         const REPORTS_SPREADSHEET_ID = '18iZ8Dm4rCQL2y5Rurqpb61zh3RZpUApBArjNrrHufOY';
         const MEMBERS_SPREADSHEET_ID = '1kFnRqlQ-8Bzlv578t9uC_T0C74jjsK3nbzBgRFTlAJM';
@@ -263,6 +263,7 @@
         function parseDate(dateStr) {
             if (!dateStr || typeof dateStr !== 'string') return null;
             
+            // Format: DD/MM/YYYY
             if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
                 const [day, month, year] = dateStr.split('/');
                 const date = new Date(year, month - 1, day);
@@ -270,8 +271,9 @@
                 return date;
             }
             
+            // Format: "DD de Mês de YYYY" (e.g., "01 de jan. de 2024")
             const monthMap = { 'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3, 'mai': 4, 'jun': 5, 'jul': 6, 'ago': 7, 'set': 8, 'out': 9, 'nov': 10, 'dez': 11 };
-            const cleanedStr = dateStr.replace('.', '').toLowerCase();
+            const cleanedStr = dateStr.replace('.', '').replace(' de', '').toLowerCase();
             const parts = cleanedStr.split(' ');
             if (parts.length !== 3) return null;
             const [day, monthStr, year] = parts;
@@ -283,6 +285,11 @@
 
         async function fetchAllData() {
             try {
+                // Check for API Key
+                if (API_KEY === 'YOUR_API_KEY') {
+                    throw new Error('API_KEY não foi configurada. Por favor, edite o script e adicione sua chave da API do Google Sheets.');
+                }
+
                 const [scheduleData, reportData, memberData] = await Promise.all([ 
                     fetchScheduleData(), 
                     fetchReportData(),
@@ -342,8 +349,6 @@
                     name: team.name.replace('[SPP] ', ''),
                     isOmega: team.name.includes('Ômega'),
                     peritoResponsavel: peritoRaw.replace(/Perito Responsável:\s*/i, '').trim(),
-                    tituloFiscalizacao: data.valueRanges[index * 5 + 1]?.values?.[0]?.[0] || 'Fiscalização',
-                    tituloPostagem: data.valueRanges[index * 5 + 2]?.values?.[0]?.[0] || 'Postagem',
                     periodoReferencia: data.valueRanges[index * 5 + 3]?.values?.[0] || [],
                     tableData: data.valueRanges[index * 5 + 4]?.values || [],
                 };
@@ -359,7 +364,7 @@
             
             data.valueRanges.forEach(rangeData => {
                 const rows = rangeData.values || [];
-                if (rangeData.range.includes('!C')) {
+                if (rangeData.range.includes('!C')) { // Reports data
                     rows.forEach(([timestamp, nick, , fiscDate]) => {
                         const trimmedNick = nick ? nick.trim() : '';
                         const trimmedFiscDate = fiscDate ? fiscDate.trim() : '';
@@ -375,7 +380,7 @@
                             postagens.get(postDate).push(trimmedNick.toLowerCase());
                         }
                     });
-                } else if (rangeData.range.includes('!N')) {
+                } else if (rangeData.range.includes('!N')) { // Justifications data
                     rows.forEach(([nick, , justifDate]) => {
                         const trimmedNick = nick ? nick.trim() : '';
                         const trimmedJustifDate = justifDate ? justifDate.trim() : '';
@@ -408,8 +413,8 @@
             return map;
         }
         
-        function getStatus(assignedNick, dateStr, type, deadlineOverrideDateStr = null) {
-            if (type === 'fiscalizacao' && assignedNick.toLowerCase() === 'perito') {
+        function getStatus(assignedNick, dateStr, deadlineOverrideDateStr = null) {
+            if (assignedNick.toLowerCase() === 'perito') {
                 return { class: '', tooltip: 'Atividade do Perito' };
             }
             if (!dateStr || dateStr === '-') return { class: '', tooltip: '' };
@@ -421,27 +426,28 @@
             if(!deadlineDate) return { class: '', tooltip: '' };
             
             const nickLower = assignedNick.toLowerCase();
-            const completedMap = type === 'fiscalizacao' ? activityMaps.fiscalizacoes : activityMaps.postagens;
-
-            const completedKey = type === 'fiscalizacao' ? dateStr : scheduleDate.toLocaleDateString('pt-BR');
-            if (completedMap.has(completedKey) && completedMap.get(completedKey).includes(nickLower)) {
-                return { class: 'status-feito', tooltip: `Concluído por ${assignedNick} em ${completedKey}` };
+            
+            // Check if it was completed
+            if (activityMaps.fiscalizacoes.has(dateStr) && activityMaps.fiscalizacoes.get(dateStr).includes(nickLower)) {
+                return { class: 'status-feito', tooltip: `Concluído por ${assignedNick}` };
             }
             
+            // Check if it was justified
             const justificationKey = `${dateStr}-${nickLower}`;
             if (activityMaps.justificativas.has(justificationKey)) {
                 return { class: 'status-justificado', tooltip: `Justificado por ${assignedNick} para ${dateStr}` };
             }
 
+            // Check against today's date for pending/due status
             if (deadlineDate.getTime() === today.getTime()) {
-                return { class: 'status-hoje', tooltip: `Prazo final hoje (${dateStr})` };
+                return { class: 'status-hoje', tooltip: `Prazo final hoje (${deadlineOverrideDateStr || dateStr})` };
             }
             
             if (deadlineDate < today) {
                 return { class: 'status-pendente', tooltip: `Pendente desde ${dateStr}` };
             }
 
-            return { class: '', tooltip: `Prazo: ${dateStr}` };
+            return { class: '', tooltip: `Prazo: ${deadlineOverrideDateStr || dateStr}` };
         }
         
         function renderTodaysResponsibilities(schedule) {
@@ -497,7 +503,7 @@
         
             if (!hasAnyResponsibility) {
                 const listItem = document.createElement('li');
-                listItem.className = 'text-gray-400 text-center';
+                listItem.className = 'text-gray-400 text-center col-span-full';
                 listItem.textContent = 'Nenhuma postagem agendada para hoje.';
                 list.appendChild(listItem);
             }
@@ -743,24 +749,24 @@
                 const isPeritoRow = nick.toLowerCase() === 'perito';
                 const effectiveNick = isPeritoRow ? teamData.peritoResponsavel : nick;
                 const isHighlighted = highlightedNick && (
-                    (!isPeritoRow && nick.toLowerCase() === highlightedNick.toLowerCase()) ||
-                    (isPeritoRow && teamData.peritoResponsavel.toLowerCase() === highlightedNick.toLowerCase())
+                    (!isPeritoRow && nick.toLowerCase().includes(highlightedNick.toLowerCase())) ||
+                    (isPeritoRow && teamData.peritoResponsavel.toLowerCase().includes(highlightedNick.toLowerCase()))
                 );
 
-                const fisc1 = row[3] || '-'; const fisc2 = row[4] || '-';
-                const post1 = row[6] || '-'; const post2 = row[7] || '-';
-                
-                let sFisc1 = getStatus(effectiveNick, fisc1, 'fiscalizacao', post1);
-                let sFisc2 = getStatus(effectiveNick, fisc2, 'fiscalizacao', post2);
-                let sPost1 = getStatus(effectiveNick, post1, 'postagem');
-                let sPost2 = getStatus(effectiveNick, post2, 'postagem');
+                const fisc1_data = row[3] || '-';
+                const fisc1_post = row[6] || '-';
+                const fisc2_data = row[4] || '-';
+                const fisc2_post = row[7] || '-';
+
+                const status1 = getStatus(effectiveNick, fisc1_data, fisc1_post);
+                const status2 = getStatus(effectiveNick, fisc2_data, fisc2_post);
                 
                 return `<tr class="border-b border-white/10 ${isPeritoRow ? 'perito-row' : ''} ${isHighlighted ? 'highlight-row' : ''}">
-                            <td class="py-3 px-4 font-medium border-r border-white/10">${nick}</td>
-                            <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${sFisc1.class}" title="${sFisc1.tooltip}">${fisc1}</span></td>
-                            <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${sFisc2.class}" title="${sFisc2.tooltip}">${fisc2}</span></td>
-                            <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${sPost1.class}" title="${sPost1.tooltip}">${post1}</span></td>
-                            <td class="p-1 text-center"><span class="status-cell inline-block w-full p-2 ${sPost2.class}" title="${sPost2.tooltip}">${post2}</span></td>
+                            <td class="py-3 px-4 font-medium text-left border-r border-white/10">${nick}</td>
+                            <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${status1.class}" title="${status1.tooltip}">${fisc1_data}</span></td>
+                            <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${status1.class}" title="${status1.tooltip}">${fisc1_post}</span></td>
+                            <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${status2.class}" title="${status2.tooltip}">${fisc2_data}</span></td>
+                            <td class="p-1 text-center"><span class="status-cell inline-block w-full p-2 ${status2.class}" title="${status2.tooltip}">${fisc2_post}</span></td>
                         </tr>`;
             }).join('');
             
@@ -774,15 +780,15 @@
                         <table class="min-w-full text-sm">
                             <thead class="text-purple-300">
                                 <tr class="bg-black/40 text-sm">
-                                    <th rowspan="2" class="py-3 px-4 text-left align-middle border-r border-b border-white/10 font-semibold">${tableHeaders[0] || 'ANALISTAS'}</th>
-                                    <th colspan="2" class="py-2 px-4 text-center border-r border-b border-white/10 font-semibold">${teamData.tituloFiscalizacao}</th>
-                                    <th colspan="2" class="py-2 px-4 text-center border-b border-white/10 font-semibold">${teamData.tituloPostagem}</th>
+                                    <th rowspan="2" class="py-3 px-4 text-left align-middle border-r border-b border-white/10 font-semibold uppercase">${tableHeaders[0] || 'Analista'}</th>
+                                    <th colspan="2" class="py-2 px-4 text-center border-r border-b border-white/10 font-semibold uppercase">1ª Fiscalização</th>
+                                    <th colspan="2" class="py-2 px-4 text-center border-b border-white/10 font-semibold uppercase">2ª Fiscalização</th>
                                 </tr>
-                                <tr class="bg-black/30">
-                                    <th class="py-2 px-4 font-normal text-xs border-r border-white/10">${tableHeaders[3] || 'Fisc. 1'}</th>
-                                    <th class="py-2 px-4 font-normal text-xs border-r border-white/10">${tableHeaders[4] || 'Fisc. 2'}</th>
-                                    <th class="py-2 px-4 font-normal text-xs border-r border-white/10">${tableHeaders[6] || 'Post. 1'}</th>
-                                    <th class="py-2 px-4 font-normal text-xs">${tableHeaders[7] || 'Post. 2'}</th>
+                                <tr class="bg-black/30 text-xs font-semibold uppercase">
+                                    <th class="py-2 px-4 font-semibold border-r border-white/10">Data Analisada</th>
+                                    <th class="py-2 px-4 font-semibold border-r border-white/10">Postagem</th>
+                                    <th class="py-2 px-4 font-semibold border-r border-white/10">Data Analisada</th>
+                                    <th class="py-2 px-4 font-semibold">Postagem</th>
                                 </tr>
                             </thead>
                             <tbody>${tableRowsHTML}</tbody>
@@ -800,7 +806,7 @@
             const nicksHTML = teamData.tableData.map(row => {
                 const nick = row[0];
                 if (!nick) return '';
-                const isHighlighted = highlightedNick && nick.toLowerCase() === highlightedNick.toLowerCase();
+                const isHighlighted = highlightedNick && nick.toLowerCase().includes(highlightedNick.toLowerCase());
                 return `<li class="bg-black/20 p-3 rounded-lg ${isHighlighted ? 'highlight-row' : ''}">${nick}</li>`;
             }).join('');
             
@@ -827,25 +833,33 @@
             }
 
             let found = false;
+            let teamToShow = null;
+            let nickToHighlight = null;
+
             for (const team of processedSchedule) {
-                if (team.peritoResponsavel.toLowerCase() === searchTerm) {
-                    displaySchedules(team.id, team.peritoResponsavel);
+                 if (team.peritoResponsavel.toLowerCase().includes(searchTerm)) {
+                    teamToShow = team.id;
+                    nickToHighlight = team.peritoResponsavel;
                     found = true;
                     break;
                 }
 
                 const members = team.isOmega ? team.tableData : team.tableData.slice(1);
-                const foundMember = members.find(row => row[0] && row[0].toLowerCase() === searchTerm);
+                const foundMember = members.find(row => row[0] && row[0].toLowerCase().includes(searchTerm));
 
                 if (foundMember) {
-                    displaySchedules(team.id, foundMember[0]);
+                    teamToShow = team.id;
+                    nickToHighlight = foundMember[0];
                     found = true;
                     break;
                 }
             }
             
-            if (!found) {
+            if (found) {
+                 displaySchedules(teamToShow, nickToHighlight);
+            } else {
                 scheduleContainer.innerHTML = '';
+                document.querySelectorAll('#team-buttons .control-btn').forEach(btn => btn.classList.remove('active'));
                 messageContainer.innerHTML = `<div class="glass-card text-yellow-300 text-center p-4"><p>Nenhum membro ou perito encontrado com o nome "${searchInput.value}".</p></div>`;
             }
         }
