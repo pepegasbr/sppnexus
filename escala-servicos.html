@@ -57,7 +57,7 @@
             box-shadow: 0 0 15px rgba(192, 132, 252, 0.5);
             font-weight: 700;
         }
-         tr.highlight-row td, .highlight-row {
+        tr.highlight-row td {
             color: #fff !important;
         }
 
@@ -100,39 +100,39 @@
     </style>
 </head>
 <body class="text-white">
-    <header class="glass-card sticky top-0 z-50 m-2 sm:m-4">
-        <div class="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
+    <header class="glass-card sticky top-0 z-50 m-4">
+        <div class="container mx-auto px-6 py-4">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div class="flex items-center">
-                    <i class="fas fa-shield-halved text-2xl sm:text-3xl text-purple-400 mr-2 sm:mr-3"></i>
-                    <h1 class="text-lg sm:text-xl md:text-2xl font-bold text-white">Serviço de Proteção dos Professores</h1>
+                    <i class="fas fa-shield-halved text-3xl text-purple-400 mr-3"></i>
+                    <h1 class="text-xl md:text-2xl font-bold text-white">Serviço de Proteção dos Professores</h1>
                 </div>
                 <nav>
-                    <a class='text-gray-200 hover:text-white font-semibold px-3 py-2 text-sm sm:text-base' href='/'>Voltar à Página Inicial</a>
+                    <a class='text-gray-200 hover:text-white font-semibold px-3 py-2' href='/'>Voltar à Página Inicial</a>
                 </nav>
             </div>
         </div>
     </header>
 
-    <main class="container mx-auto px-2 sm:px-4 md:px-6 py-8">
-        <h2 class="text-3xl sm:text-4xl font-bold text-white mb-8 text-center drop-shadow-lg">Escala de Serviços</h2>
+    <main class="container mx-auto px-4 sm:px-6 py-12">
+        <h2 class="text-4xl font-bold text-white mb-8 text-center drop-shadow-lg">Escala de Serviços</h2>
 
-        <div id="today-responsibilities" class="glass-card p-4 sm:p-6 mb-8 max-w-3xl mx-auto hidden">
-            <h3 class="text-xl sm:text-2xl font-bold text-center text-white mb-4 drop-shadow-md">
+        <div id="today-responsibilities" class="glass-card p-6 mb-8 max-w-3xl mx-auto hidden">
+            <h3 class="text-2xl font-bold text-center text-white mb-4 drop-shadow-md">
                 <i class="fas fa-calendar-day mr-2 text-purple-300"></i>Postagens de Hoje
             </h3>
-            <ul id="today-responsibilities-list" class="space-y-2 text-sm sm:text-base sm:columns-2 sm:gap-x-8 text-center sm:text-left">
+            <ul id="today-responsibilities-list" class="space-y-2 sm:columns-2 sm:gap-x-8 text-center sm:text-left">
             </ul>
         </div>
         
         <div id="controls-container" class="glass-card p-4 mb-8 max-w-5xl mx-auto">
-            <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
+            <div class="flex flex-col lg:flex-row gap-6">
                 <div class="flex-grow">
                     <label class="block text-sm font-semibold mb-2 text-purple-300">Filtrar por equipe:</label>
                     <div id="team-buttons" class="flex flex-wrap gap-2">
                     </div>
                 </div>
-                <div class="lg:border-l lg:border-white/20 lg:pl-6 w-full lg:w-auto">
+                <div class="lg:border-l lg:border-white/20 lg:pl-6">
                     <label for="search-input" class="block text-sm font-semibold mb-2 text-purple-300">Pesquise seu nick:</label>
                     <div class="flex gap-2">
                         <input type="text" id="search-input" placeholder="Digite o nick ou perito..." class="w-full bg-black/20 rounded-md py-2 px-3 border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-500 transition">
@@ -144,9 +144,9 @@
             </div>
         </div>
 
-        <div id="legend" class="glass-card p-4 mb-8 max-w-4xl mx-auto hidden">
+        <div id="legend" class="glass-card p-4 mb-8 max-w-3xl mx-auto hidden">
             <h3 class="text-lg font-semibold text-center mb-3">Legenda de Cores</h3>
-            <ul class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-4 gap-y-2 text-sm text-center">
+            <ul class="grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-2 text-sm text-center">
                 <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-feito"></span> Feito</li>
                 <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-hoje"></span> Hoje</li>
                 <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-pendente"></span> Pendente</li>
@@ -167,44 +167,44 @@
 
     </main>
 
-    <footer class="glass-card mt-12 mx-2 sm:mx-4 mb-4">
-        <div class="container mx-auto px-4 sm:px-6 py-4 text-center text-white/70 text-xs sm:text-sm">
+    <footer class="glass-card mt-12 mx-4 mb-4">
+        <div class="container mx-auto px-6 py-4 text-center text-white/70 text-sm">
             <p class="mb-1">&copy; 2025 Serviço de Proteção dos Professores. Todos os direitos reservados.</p>
             <p>Desenvolvido por <strong class="text-white/90">Pegas</strong> e idealizado por <strong class="text-white/90">Sr.Gabriel</strong>.</p>
         </div>
     </footer>
 
-    <div class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col gap-3 sm:gap-4">
-        <button id="performance-btn" class="h-12 w-12 sm:h-14 sm:w-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110" title="Consulta de Desempenho">
-            <i class="fas fa-chart-line text-xl sm:text-2xl"></i>
+    <div class="fixed bottom-6 right-6 z-40 flex flex-col gap-4">
+        <button id="performance-btn" class="h-14 w-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110" title="Consulta de Desempenho">
+            <i class="fas fa-chart-line text-2xl"></i>
         </button>
-        <button id="warnings-btn" class="h-12 w-12 sm:h-14 sm:w-14 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110" title="Painel de Advertências">
-            <i class="fas fa-triangle-exclamation text-xl sm:text-2xl"></i>
+        <button id="warnings-btn" class="h-14 w-14 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110" title="Painel de Advertências">
+            <i class="fas fa-triangle-exclamation text-2xl"></i>
         </button>
-        <button id="help-btn" class="h-12 w-12 sm:h-14 sm:w-14 bg-purple-600 hover:bg-purple-700 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110" title="Ajuda">
-            <i class="fas fa-question text-xl sm:text-2xl"></i>
+        <button id="help-btn" class="h-14 w-14 bg-purple-600 hover:bg-purple-700 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110" title="Ajuda">
+            <i class="fas fa-question text-2xl"></i>
         </button>
     </div>
     
     <div id="performance-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
-        <div class="glass-card max-w-4xl w-full m-4 p-4 sm:p-6 rounded-2xl">
+        <div class="glass-card max-w-4xl w-full m-4 p-6 rounded-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl sm:text-2xl font-bold text-white"><i class="fas fa-chart-line mr-2 text-blue-300"></i>Consulta de Desempenho</h3>
+                <h3 class="text-2xl font-bold text-white"><i class="fas fa-chart-line mr-2 text-blue-300"></i>Consulta de Desempenho</h3>
                 <button id="close-performance-btn" class="text-gray-300 hover:text-white text-2xl">&times;</button>
             </div>
-            <div id="performance-period" class="text-center text-purple-300 mb-4 text-sm sm:text-base"></div>
-            <div id="performance-list-container" class="max-h-[70vh] sm:max-h-[60vh] overflow-y-auto pr-2">
+            <div id="performance-period" class="text-center text-purple-300 mb-4"></div>
+            <div id="performance-list-container" class="max-h-[60vh] overflow-y-auto pr-2">
             </div>
         </div>
     </div>
 
     <div id="warnings-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
-        <div class="glass-card max-w-2xl w-full m-4 p-4 sm:p-6 rounded-2xl">
+        <div class="glass-card max-w-2xl w-full m-4 p-6 rounded-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl sm:text-2xl font-bold text-white"><i class="fas fa-triangle-exclamation mr-2 text-yellow-300"></i>Painel de Advertências</h3>
+                <h3 class="text-2xl font-bold text-white"><i class="fas fa-triangle-exclamation mr-2 text-yellow-300"></i>Painel de Advertências</h3>
                 <button id="close-warnings-btn" class="text-gray-300 hover:text-white text-2xl">&times;</button>
             </div>
-            <div id="warnings-list-container" class="max-h-[70vh] sm:max-h-[60vh] overflow-y-auto pr-2">
+            <div id="warnings-list-container" class="max-h-[60vh] overflow-y-auto pr-2">
                 <ul id="warnings-list" class="space-y-3">
                 </ul>
             </div>
@@ -212,12 +212,12 @@
     </div>
 
     <div id="help-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
-        <div class="glass-card max-w-lg w-full m-4 p-4 sm:p-6 rounded-2xl">
+        <div class="glass-card max-w-lg w-full m-4 p-6 rounded-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl sm:text-2xl font-bold text-white"><i class="fas fa-question-circle mr-2 text-purple-300"></i>Como Entender a Escala</h3>
+                <h3 class="text-2xl font-bold text-white"><i class="fas fa-question-circle mr-2 text-purple-300"></i>Como Entender a Escala</h3>
                 <button id="close-help-btn" class="text-gray-300 hover:text-white text-2xl">&times;</button>
             </div>
-            <div class="space-y-4 text-gray-200 text-sm sm:text-base">
+            <div class="space-y-4 text-gray-200">
                 <p>A escala mostra as <strong>Datas Analisadas</strong> e o prazo final para a <strong>Postagem</strong> dos seus relatórios.</p>
                 <div>
                     <h4 class="font-semibold text-purple-300">Passo a Passo:</h4>
@@ -450,7 +450,7 @@
         
         function getStatus(assignedNick, dateStr, deadlineOverrideDateStr = null) {
             if (assignedNick.toLowerCase() === 'perito') {
-                return { class: '', tooltip: 'Atividade do Perito' };
+                 return { class: '', tooltip: 'Atividade do Perito' };
             }
             if (!dateStr || dateStr === '-') return { class: '', tooltip: '' };
 
@@ -652,12 +652,12 @@
 
             if (warnings.length > 0) {
                 list.innerHTML = warnings.map(w => `
-                    <li class="bg-red-900/40 p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-2 text-sm">
+                    <li class="bg-red-900/40 p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-2">
                         <div class="mb-2 sm:mb-0 text-center sm:text-left">
                             <strong class="text-yellow-300">${w.nick}</strong>
                             <span class="text-gray-300">(${w.team})</span>
                         </div>
-                        <div class="text-gray-200 text-center sm:text-right">
+                        <div class="text-sm text-gray-200 text-center sm:text-right">
                             Tarefa de <strong>${w.fiscDate}</strong> com prazo em <strong>${w.postDate}</strong> não cumprida.
                         </div>
                     </li>
@@ -765,40 +765,38 @@
             });
             
             const tableHTML = `
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-xs sm:text-sm text-center">
-                        <thead class="bg-black/30">
-                            <tr>
-                                <th class="py-2 px-3 text-left font-semibold text-purple-300">Cargo</th>
-                                <th class="py-2 px-3 text-left font-semibold text-purple-300">Nick</th>
-                                <th class="py-2 px-3 font-semibold text-purple-300">Status</th>
-                                <th class="py-2 px-3 font-semibold text-purple-300">Motivo</th>
+                <table class="min-w-full text-sm text-center">
+                    <thead class="bg-black/30">
+                        <tr>
+                            <th class="py-2 px-3 text-left font-semibold text-purple-300">Cargo</th>
+                            <th class="py-2 px-3 text-left font-semibold text-purple-300">Nick</th>
+                            <th class="py-2 px-3 font-semibold text-purple-300">Status</th>
+                            <th class="py-2 px-3 font-semibold text-purple-300">Motivo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${performanceData.map(p => `
+                            <tr class="border-b border-white/20">
+                                <td class="py-3 px-3 text-left">${p.cargo}</td>
+                                <td class="py-3 px-3 text-left font-semibold">${p.nick}</td>
+                                <td class="py-2 px-3">
+                                    <span class="inline-block w-full py-1 px-3 rounded-md font-semibold status-${p.status.toLowerCase().replace(/ /g, '-').replace('caso-especial','especial')}">
+                                        ${p.status.replace('CASO ESPECIAL', 'C. ESPECIAL')}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-3">${p.motivo}</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            ${performanceData.map(p => `
-                                <tr class="border-b border-white/20">
-                                    <td class="py-3 px-3 text-left">${p.cargo}</td>
-                                    <td class="py-3 px-3 text-left font-semibold">${p.nick}</td>
-                                    <td class="py-2 px-3">
-                                        <span class="inline-block w-full py-1 px-2 sm:px-3 rounded-md font-semibold status-${p.status.toLowerCase().replace(/ /g, '-').replace('caso-especial','especial')}">
-                                            ${p.status.replace('CASO ESPECIAL', 'C. ESPECIAL')}
-                                        </span>
-                                    </td>
-                                    <td class="py-3 px-3">${p.motivo}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
+                        `).join('')}
+                    </tbody>
+                </table>
             `;
             container.innerHTML = performanceData.length > 0 ? tableHTML : `<div class="text-center p-4">Não foi possível calcular o desempenho.</div>`;
         }
 
         function renderControls() {
-            teamButtonsContainer.innerHTML = `<button class="control-btn active font-semibold py-2 px-3 sm:px-4 rounded-md text-sm" data-team-id="all">Todas</button>`;
+            teamButtonsContainer.innerHTML = `<button class="control-btn active font-semibold py-2 px-4 rounded-md" data-team-id="all">Todas</button>`;
             processedSchedule.forEach(team => {
-                teamButtonsContainer.innerHTML += `<button class="control-btn font-semibold py-2 px-3 sm:px-4 rounded-md text-sm" data-team-id="${team.id}">${team.name}</button>`;
+                teamButtonsContainer.innerHTML += `<button class="control-btn font-semibold py-2 px-4 rounded-md" data-team-id="${team.id}">${team.name}</button>`;
             });
         }
         
@@ -901,30 +899,12 @@
                 const status1 = getStatus(representativeNick, fisc1_data, fisc1_post);
                 const status2 = getStatus(representativeNick, fisc2_data, fisc2_post);
                 
-                // Card for mobile view
-                return `<div class="block md:hidden border-b border-white/20 p-4 mb-4 rounded-lg ${isPeritoRow ? 'perito-row' : 'bg-black/10'} ${isHighlighted ? 'highlight-row' : ''}">
-                            <h5 class="font-bold text-lg mb-3">${nick}</h5>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                                <div class="bg-black/20 p-3 rounded-md">
-                                    <p class="font-semibold text-purple-300 mb-2">1ª Fiscalização</p>
-                                    <div class="flex justify-between items-center"><span>Data An.:</span> <span class="status-cell p-1 px-2 ${status1.class}" title="${status1.tooltip}">${fisc1_data}</span></div>
-                                    <div class="flex justify-between items-center mt-1"><span>Postagem:</span> <span class="status-cell p-1 px-2 ${status1.class}" title="${status1.tooltip}">${fisc1_post}</span></div>
-                                </div>
-                                <div class="bg-black/20 p-3 rounded-md">
-                                    <p class="font-semibold text-purple-300 mb-2">2ª Fiscalização</p>
-                                    <div class="flex justify-between items-center"><span>Data An.:</span> <span class="status-cell p-1 px-2 ${status2.class}" title="${status2.tooltip}">${fisc2_data}</span></div>
-                                    <div class="flex justify-between items-center mt-1"><span>Postagem:</span> <span class="status-cell p-1 px-2 ${status2.class}" title="${status2.tooltip}">${fisc2_post}</span></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Table row for desktop view -->
-                        <tr class="hidden md:table-row border-b border-white/10 ${isPeritoRow ? 'perito-row' : ''} ${isHighlighted ? 'highlight-row' : ''}">
-                                <td class="py-3 px-4 font-medium text-left border-r border-white/10">${nick}</td>
-                                <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${status1.class}" title="${status1.tooltip}">${fisc1_data}</span></td>
-                                <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${status1.class}" title="${status1.tooltip}">${fisc1_post}</span></td>
-                                <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${status2.class}" title="${status2.tooltip}">${fisc2_data}</span></td>
-                                <td class="p-1 text-center"><span class="status-cell inline-block w-full p-2 ${status2.class}" title="${status2.tooltip}">${fisc2_post}</span></td>
+                return `<tr class="border-b border-white/10 ${isPeritoRow ? 'perito-row' : ''} ${isHighlighted ? 'highlight-row' : ''}">
+                            <td class="py-3 px-4 font-medium text-left border-r border-white/10">${nick}</td>
+                            <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${status1.class}" title="${status1.tooltip}">${fisc1_data}</span></td>
+                            <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${status1.class}" title="${status1.tooltip}">${fisc1_post}</span></td>
+                            <td class="p-1 text-center border-r border-white/10"><span class="status-cell inline-block w-full p-2 ${status2.class}" title="${status2.tooltip}">${fisc2_data}</span></td>
+                            <td class="p-1 text-center"><span class="status-cell inline-block w-full p-2 ${status2.class}" title="${status2.tooltip}">${fisc2_post}</span></td>
                         </tr>`;
             }).join('');
             
@@ -946,13 +926,13 @@
                     return `<tr class="border-b border-white/10 ${isHighlighted ? 'highlight-row' : ''}">
                                 <td class="py-3 px-4 font-medium text-left">${perito.nick}</td>
                                 <td class="py-2 px-1 text-center border-r border-white/10">
-                                    <div id="${cell1Id}" class="status-cell ${status1.class} rounded-md px-2 py-1 flex justify-center items-center flex-wrap min-h-[34px]" title="${status1.tooltip}">
+                                    <div id="${cell1Id}" class="status-cell ${status1.class} rounded-md px-2 py-1 flex justify-between items-center min-h-[34px]" title="${status1.tooltip}">
                                         <span>${perito.fisc1}</span>
                                         ${status1.isAlert ? `<span id="${status1.timerId}" class="timer"></span>` : ''}
                                     </div>
                                 </td>
                                 <td class="py-2 px-1 text-center">
-                                    <div id="${cell2Id}" class="status-cell ${status2.class} rounded-md px-2 py-1 flex justify-center items-center flex-wrap min-h-[34px]" title="${status2.tooltip}">
+                                    <div id="${cell2Id}" class="status-cell ${status2.class} rounded-md px-2 py-1 flex justify-between items-center min-h-[34px]" title="${status2.tooltip}">
                                         <span>${perito.fisc2}</span>
                                         ${status2.isAlert ? `<span id="${status2.timerId}" class="timer"></span>` : ''}
                                     </div>
@@ -962,12 +942,12 @@
 
                 peritosHTML = `
                     <div class="mt-8">
-                        <h4 class="text-xl sm:text-2xl font-bold text-center text-white mb-4 drop-shadow-md">Fiscalização dos Peritos da Semana</h4>
-                        <div class="bg-black/20 p-2 sm:p-4 rounded-xl">
+                        <h4 class="text-2xl font-bold text-center text-white mb-4 drop-shadow-md">Fiscalização dos Peritos da Semana</h4>
+                        <div class="bg-black/20 p-4 rounded-xl">
                             <div class="overflow-x-auto">
                                 <table class="min-w-full text-sm">
                                     <thead class="text-purple-300">
-                                        <tr class="bg-black/40 text-xs sm:text-sm">
+                                        <tr class="bg-black/40 text-sm">
                                             <th class="py-2 px-4 text-left font-semibold uppercase">Perito</th>
                                             <th class="py-2 px-4 text-center font-semibold uppercase border-r border-white/10">1ª Fisc. (Data Analisada)</th>
                                             <th class="py-2 px-4 text-center font-semibold uppercase">2ª Fisc. (Data Analisada)</th>
@@ -982,16 +962,10 @@
             }
             
             teamElement.innerHTML = `
-                <h3 class="text-2xl sm:text-3xl font-bold text-center text-white mb-2 drop-shadow-md">${teamData.name}</h3>
-                <p class="text-center text-purple-300 mb-6 text-sm sm:text-base"><strong>Perito Responsável:</strong> ${teamData.peritoResponsavel.join(' e ')}</p>
-                <div class="bg-black/20 p-2 sm:p-4 rounded-xl">
-                    <!-- Mobile View (Cards) -->
-                    <div class="md:hidden">
-                       ${tableRowsHTML}
-                    </div>
-                    
-                    <!-- Desktop View (Table) -->
-                    <div class="hidden md:block overflow-x-auto">
+                <h3 class="text-3xl font-bold text-center text-white mb-2 drop-shadow-md">${teamData.name}</h3>
+                <p class="text-center text-purple-300 mb-6"><strong>Perito Responsável:</strong> ${teamData.peritoResponsavel.join(' e ')}</p>
+                <div class="bg-black/20 p-4 rounded-xl">
+                    <div class="overflow-x-auto">
                         <table class="min-w-full text-sm">
                             <thead class="text-purple-300">
                                 <tr class="bg-black/40 text-sm">
@@ -1018,7 +992,7 @@
 
         function renderOmegaTeam(teamData, highlightedNick = null) {
             const teamElement = document.createElement('div');
-            teamElement.className = 'glass-card text-white p-4 sm:p-6';
+            teamElement.className = 'glass-card text-white p-6';
             const nicksHTML = teamData.tableData.map(row => {
                 const nick = row[0];
                 if (!nick) return '';
@@ -1027,14 +1001,14 @@
             }).join('');
             
             teamElement.innerHTML = `
-                <h3 class="text-2xl sm:text-3xl font-bold text-center text-cyan-400 mb-2 drop-shadow-md">${teamData.name}</h3>
-                <p class="text-center text-gray-300 mb-6 text-sm sm:text-base"><strong>Perito Responsável:</strong> ${teamData.peritoResponsavel.join(' e ')}</p>
+                <h3 class="text-3xl font-bold text-center text-cyan-400 mb-2 drop-shadow-md">${teamData.name}</h3>
+                <p class="text-center text-gray-300 mb-6"><strong>Perito Responsável:</strong> ${teamData.peritoResponsavel.join(' e ')}</p>
                 <div class="bg-black/20 p-4 rounded-xl">
                     <h4 class="font-semibold text-lg text-center mb-3">Membros da Equipe</h4>
-                    <ul class="space-y-2 text-center text-sm sm:text-base">${nicksHTML}</ul>
+                    <ul class="space-y-2 text-center">${nicksHTML}</ul>
                 </div>
                 <div class="text-center mt-6">
-                    <a href="https://www.policiarcc.com/t31666-spp-orientacoes-aos-analistas" target="_blank" rel="noopener noreferrer" class="inline-block bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-lg text-sm sm:text-base">
+                    <a href="https://www.policiarcc.com/t31666-spp-orientacoes-aos-analistas" target="_blank" rel="noopener noreferrer" class="inline-block bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-lg">
                         <i class="fas fa-book-open mr-2"></i>Orientações aos Analistas
                     </a>
                 </div>`;
@@ -1058,9 +1032,9 @@
                     nickToHighlight = searchTerm;
                     found = true;
                     break;
-                 }
+                }
                 
-                 if (team.id === '[SPP] Equipe Beta' && team.peritoTasks) {
+                if (team.id === '[SPP] Equipe Beta' && team.peritoTasks) {
                     const foundPerito = team.peritoTasks.find(p => p.nick && p.nick.toLowerCase().includes(searchTerm));
                     if (foundPerito) {
                         teamToShow = team.id;
@@ -1068,7 +1042,7 @@
                         found = true;
                         break;
                     }
-                 }
+                }
 
                 const members = team.isOmega ? team.tableData : team.tableData.slice(1);
                 const foundMember = members.find(row => row[0] && row[0].toLowerCase().includes(searchTerm));
