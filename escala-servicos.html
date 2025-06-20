@@ -238,9 +238,10 @@
         const REPORTS_SPREADSHEET_ID = '18iZ8Dm4rCQL2y5Rurqpb61zh3RZpUApBArjNrrHufOY';
         const MEMBERS_SPREADSHEET_ID = '1kFnRqlQ-8Bzlv578t9uC_T0C74jjsK3nbzBgRFTlAJM';
 
+        // Configuration for each team, including special ranges for Beta team's experts
         const TEAMS = [
             { name: '[SPP] Equipe Alpha', reportTab: 'Equipe Alpha', range: 'C13:J17' },
-            { name: '[SPP] Equipe Beta', reportTab: 'Equipe Beta', range: 'C13:J17' },
+            { name: '[SPP] Equipe Beta', reportTab: 'Equipe Beta', range: 'C13:J17', extraRanges: ['L14:N17'] },
             { name: '[SPP] Equipe Delta', reportTab: 'Equipe Delta', range: 'C13:J17' },
             { name: '[SPP] Equipe Ômega', reportTab: null, range: 'C14:C16' }
         ];
@@ -260,9 +261,11 @@
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        // Parses date strings from the spreadsheet into Date objects
         function parseDate(dateStr) {
             if (!dateStr || typeof dateStr !== 'string') return null;
             
+            // Format: DD/MM/YYYY
             if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
                 const [day, month, year] = dateStr.split('/');
                 const date = new Date(year, month - 1, day);
@@ -270,6 +273,7 @@
                 return date;
             }
             
+            // Format: "DD de Mês. de YYYY"
             const monthMap = { 'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3, 'mai': 4, 'jun': 5, 'jul': 6, 'ago': 7, 'set': 8, 'out': 9, 'nov': 10, 'dez': 11 };
             const cleanedStr = dateStr.replace('.', '').replace(' de', '').toLowerCase();
             const parts = cleanedStr.split(' ');
@@ -281,6 +285,7 @@
             return date;
         }
 
+        // Main function to orchestrate fetching and rendering of all data
         async function fetchAllData() {
             try {
                 if (API_KEY === 'YOUR_API_KEY') {
@@ -313,14 +318,29 @@
             }
         }
         
+        // Fetches all necessary ranges from the schedule spreadsheet
         async function fetchScheduleData() {
-            const ranges = TEAMS.flatMap(t => [`'${t.name}'!C9`,`'${t.name}'!F11`,`'${t.name}'!I11`,`'${t.name}'!F20:G20`,`'${t.name}'!${t.range}`]);
+            const ranges = TEAMS.flatMap(t => {
+                const teamRanges = [
+                    `'${t.name}'!C9`,
+                    `'${t.name}'!F11`,
+                    `'${t.name}'!I11`,
+                    `'${t.name}'!F20:G20`,
+                    `'${t.name}'!${t.range}`
+                ];
+                // If a team has extra ranges defined (like Beta), add them to the fetch list
+                if (t.extraRanges) {
+                    teamRanges.push(...t.extraRanges.map(r => `'${t.name}'!${r}`));
+                }
+                return teamRanges;
+            });
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${SCHEDULE_SPREADSHEET_ID}/values:batchGet?ranges=${ranges.join('&ranges=')}&key=${API_KEY}`;
             const response = await fetch(url);
             if (!response.ok) throw new Error('Falha ao buscar dados da escala.');
             return response.json();
         }
 
+        // Fetches data from the reports spreadsheet to check task completion
         async function fetchReportData() {
             const reportTeams = TEAMS.filter(t => t.reportTab);
             const ranges = reportTeams.flatMap(t => [`'${t.reportTab}'!C14:F400`, `'${t.reportTab}'!N14:P400`]);
@@ -330,6 +350,7 @@
             return response.json();
         }
         
+        // Fetches data about all members for the performance modal
         async function fetchMemberData() {
             const range = 'Gerador!B16:I37';
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${MEMBERS_SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
@@ -338,20 +359,36 @@
             return response.json();
         }
 
+        // Processes the raw schedule data from the API response
         function processScheduleData(data) {
-            return TEAMS.map((team, index) => {
-                const peritoRaw = data.valueRanges[index * 5]?.values?.[0]?.[0] || 'N/A';
-                return {
+            let rangeCursor = 0;
+            return TEAMS.map(team => {
+                const peritoRaw = data.valueRanges[rangeCursor]?.values?.[0]?.[0] || 'N/A';
+                const teamObject = {
                     id: team.name,
                     name: team.name.replace('[SPP] ', ''),
                     isOmega: team.name.includes('Ômega'),
                     peritoResponsavel: peritoRaw.replace(/Perito Responsável:\s*/i, '').trim(),
-                    periodoReferencia: data.valueRanges[index * 5 + 3]?.values?.[0] || [],
-                    tableData: data.valueRanges[index * 5 + 4]?.values || [],
+                    periodoReferencia: data.valueRanges[rangeCursor + 3]?.values?.[0] || [],
+                    tableData: data.valueRanges[rangeCursor + 4]?.values || [],
                 };
+                rangeCursor += 5; // Move past the 5 standard ranges
+
+                // If the team has extra data (like Beta's experts), process it
+                if (team.extraRanges) {
+                    const peritoTaskData = data.valueRanges[rangeCursor]?.values || [];
+                    teamObject.peritoTasks = peritoTaskData.map(row => ({
+                        nick: row[0] || null,
+                        fisc1: row[1] || '-',
+                        fisc2: row[2] || '-'
+                    })).filter(p => p.nick); // Keep only rows that have a perito nick
+                    rangeCursor += team.extraRanges.length; // Move cursor past the extra ranges
+                }
+                return teamObject;
             });
         }
 
+        // Processes report data to create maps of completed tasks and justifications
         function processReportData(data) {
             const fiscalizacoes = new Map(); 
             const postagens = new Map(); 
@@ -410,6 +447,7 @@
             return map;
         }
         
+        // Determines the status (and CSS class) of a standard task cell
         function getStatus(assignedNick, dateStr, deadlineOverrideDateStr = null) {
             if (assignedNick.toLowerCase() === 'perito') {
                 return { class: '', tooltip: 'Atividade do Perito' };
@@ -424,16 +462,19 @@
             
             const nickLower = assignedNick.toLowerCase();
             
+            // Check if task is done
             if (activityMaps.fiscalizacoes.has(dateStr) && activityMaps.fiscalizacoes.get(dateStr).includes(nickLower)) {
                 return { class: 'status-feito', tooltip: `Concluído por ${assignedNick}` };
             }
             
+            // Check for justification
             const fiscJustificationKey = `${dateStr}-${nickLower}`;
             const postJustificationKey = deadlineOverrideDateStr ? `${deadlineOverrideDateStr}-${nickLower}` : null;
             if (activityMaps.justificativas.has(fiscJustificationKey) || (postJustificationKey && activityMaps.justificativas.has(postJustificationKey))) {
                 return { class: 'status-justificado', tooltip: `Justificado por ${assignedNick} para a tarefa de ${dateStr}` };
             }
-
+            
+            // Check deadline status
             if (deadlineDate.getTime() === today.getTime()) {
                 return { class: 'status-hoje', tooltip: `Prazo final hoje (${deadlineOverrideDateStr || dateStr})` };
             }
@@ -443,6 +484,35 @@
             }
 
             return { class: '', tooltip: `Prazo: ${deadlineOverrideDateStr || dateStr}` };
+        }
+        
+        // ** NEW ** Determines the status for the "Peritos da Semana" table
+        function getPeritoStatus(assignedNick, dateStr) {
+            if (!dateStr || dateStr === '-') return { class: '', tooltip: '' };
+
+            const deadlineDate = parseDate(dateStr);
+            if (!deadlineDate) return { class: '', tooltip: '' };
+            
+            const nickLower = assignedNick.toLowerCase();
+            
+            // Check if task is done (GREEN)
+            if (activityMaps.fiscalizacoes.has(dateStr) && activityMaps.fiscalizacoes.get(dateStr).includes(nickLower)) {
+                return { class: 'status-feito', tooltip: `Concluído por ${assignedNick}` };
+            }
+            
+            // Check for justification (BLUE)
+            const justificationKey = `${dateStr}-${nickLower}`;
+            if (activityMaps.justificativas.has(justificationKey)) {
+                return { class: 'status-justificado', tooltip: `Justificado por ${assignedNick} para a tarefa de ${dateStr}` };
+            }
+
+            // Check if deadline is today (YELLOW)
+            if (deadlineDate.getTime() === today.getTime()) {
+                return { class: 'status-hoje', tooltip: `Prazo final hoje (${dateStr})` };
+            }
+            
+            // If past due, do not mark as pending (red). Return default (no color).
+            return { class: '', tooltip: `Prazo: ${dateStr}` };
         }
         
         function renderTodaysResponsibilities(schedule) {
@@ -466,7 +536,7 @@
                     const isPeritoRow = nick.toLowerCase() === 'perito';
                     const memberName = isPeritoRow ? teamData.peritoResponsavel : nick;
         
-                    const postDates = [row[6], row[7]];
+                    const postDates = [row[6], row[7]]; 
                     
                     postDates.forEach((date, index) => {
                         if (date === todayStr) {
@@ -697,10 +767,12 @@
             });
         }
 
+        // Main function to render schedules based on filters
         function displaySchedules(teamIdFilter, highlightedNick = null) {
             scheduleContainer.innerHTML = '';
             messageContainer.innerHTML = '';
             
+            // Update active button state
             document.querySelectorAll('#team-buttons .control-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.teamId === teamIdFilter);
             });
@@ -737,6 +809,7 @@
             });
         }
 
+        // Renders the HTML for a standard team schedule table
         function renderTeamSchedule(teamData, highlightedNick = null) {
             const teamElement = document.createElement('div');
             teamElement.className = 'glass-card text-white p-4 sm:p-6';
@@ -744,6 +817,7 @@
             const tableHeaders = teamData.tableData[0] || [];
             const tableRowsData = teamData.tableData.slice(1);
             
+            // Generate HTML for the main analyst table rows
             let tableRowsHTML = tableRowsData.map(row => {
                 const nick = row[0] || ''; if (!nick) return '';
                 
@@ -773,6 +847,47 @@
             
             const periodoRef = teamData.periodoReferencia.length > 1 ? `${teamData.periodoReferencia[0]} a ${teamData.periodoReferencia[1]}` : 'N/A';
             
+            // Generate HTML for the weekly experts table (only for Beta team)
+            let peritosHTML = '';
+            if (teamData.id === '[SPP] Equipe Beta' && teamData.peritoTasks && teamData.peritoTasks.length > 0) {
+                const peritoRowsHTML = teamData.peritoTasks.map(perito => {
+                    if (!perito.nick) return '';
+
+                    const isHighlighted = highlightedNick && perito.nick.toLowerCase().includes(highlightedNick.toLowerCase());
+                    
+                    // **MODIFIED**: Use the new status function for peritos
+                    const status1 = getPeritoStatus(perito.nick, perito.fisc1);
+                    const status2 = getPeritoStatus(perito.nick, perito.fisc2);
+
+                    return `<tr class="border-b border-white/10 ${isHighlighted ? 'highlight-row' : ''}">
+                        <td class="py-3 px-4 font-medium text-left">${perito.nick}</td>
+                        <td class="p-1 text-center"><span class="status-cell inline-block w-full p-2 ${status1.class}" title="${status1.tooltip}">${perito.fisc1}</span></td>
+                        <td class="p-1 text-center"><span class="status-cell inline-block w-full p-2 ${status2.class}" title="${status2.tooltip}">${perito.fisc2}</span></td>
+                    </tr>`;
+                }).join('');
+
+                peritosHTML = `
+                    <div class="mt-8">
+                        <h4 class="text-2xl font-bold text-center text-white mb-4 drop-shadow-md">Fiscalização dos Peritos da Semana</h4>
+                        <div class="bg-black/20 p-4 rounded-xl">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full text-sm">
+                                    <thead class="text-purple-300">
+                                        <tr class="bg-black/40 text-sm">
+                                            <th class="py-2 px-4 text-left font-semibold uppercase">Perito</th>
+                                            <th class="py-2 px-4 text-center font-semibold uppercase">1ª Fisc. (Data Analisada)</th>
+                                            <th class="py-2 px-4 text-center font-semibold uppercase">2ª Fisc. (Data Analisada)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${peritoRowsHTML}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Assemble the final HTML for the team element
             teamElement.innerHTML = `
                 <h3 class="text-3xl font-bold text-center text-white mb-2 drop-shadow-md">${teamData.name}</h3>
                 <p class="text-center text-purple-300 mb-6"><strong>Perito Responsável:</strong> ${teamData.peritoResponsavel}</p>
@@ -796,6 +911,7 @@
                         </table>
                     </div>
                 </div>
+                ${peritosHTML}
                 <div class="text-right text-xs text-purple-300 mt-4 pr-2"><strong>Período de Referência:</strong> ${periodoRef}</div>
             `;
             return teamElement;
@@ -844,6 +960,17 @@
                     found = true;
                     break;
                 }
+                
+                // Also search in the weekly peritos for Beta team
+                if (team.id === '[SPP] Equipe Beta' && team.peritoTasks) {
+                    const foundPerito = team.peritoTasks.find(p => p.nick && p.nick.toLowerCase().includes(searchTerm));
+                    if (foundPerito) {
+                        teamToShow = team.id;
+                        nickToHighlight = foundPerito.nick;
+                        found = true;
+                        break;
+                    }
+                }
 
                 const members = team.isOmega ? team.tableData : team.tableData.slice(1);
                 const foundMember = members.find(row => row[0] && row[0].toLowerCase().includes(searchTerm));
@@ -864,7 +991,8 @@
                 messageContainer.innerHTML = `<div class="glass-card text-yellow-300 text-center p-4"><p>Nenhum membro ou perito encontrado com o nome "${searchInput.value}".</p></div>`;
             }
         }
-
+        
+        // --- Event Listeners ---
         window.addEventListener('load', fetchAllData);
 
         teamButtonsContainer.addEventListener('click', (e) => {
