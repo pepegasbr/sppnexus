@@ -4,16 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SPP - Escala de Serviços</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        /* Base styles */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -41,17 +37,15 @@
             min-height: 100vh;
         }
 
-        /* Glassmorphism Card Style */
         .glass-card {
             background: rgba(20, 2, 40, 0.45);
             backdrop-filter: blur(12px) saturate(150%);
             -webkit-backdrop-filter: blur(12px) saturate(150%);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 1rem; /* 16px */
+            border-radius: 1rem;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         }
 
-        /* Highlight for Perito and searched user rows */
         .perito-row {
             background-color: rgba(45, 11, 66, 0.8) !important;
             color: #e9d5ff;
@@ -67,17 +61,15 @@
             color: #fff !important;
         }
 
-        /* Status classes */
         .status-cell {
             transition: background-color 0.3s ease;
             border-radius: 4px;
         }
-        .status-feito { background-color: rgba(34, 197, 94, 0.5); } /* green-500/50 */
-        .status-hoje { background-color: rgba(250, 204, 21, 0.5); } /* yellow-400/50 */
-        .status-justificado { background-color: rgba(59, 130, 246, 0.5); } /* blue-500/50 */
-        .status-pendente { background-color: rgba(239, 68, 68, 0.5); } /* red-500/50 */
+        .status-feito { background-color: rgba(34, 197, 94, 0.5); }
+        .status-hoje { background-color: rgba(250, 204, 21, 0.5); }
+        .status-justificado { background-color: rgba(59, 130, 246, 0.5); }
+        .status-pendente { background-color: rgba(239, 68, 68, 0.5); }
 
-        /* Styles for new controls */
         .control-btn {
             transition: all 0.3s ease;
             background-color: rgba(255, 255, 255, 0.1);
@@ -88,24 +80,19 @@
             transform: translateY(-2px);
         }
         .control-btn.active {
-            background-color: #a855f7; /* purple-500 */
+            background-color: #a855f7;
             color: white;
             font-weight: 600;
             box-shadow: 0 0 10px rgba(168, 85, 247, 0.7);
         }
         
-        /* Performance Status Styles */
         .status-regular { background-color: rgba(34, 197, 94, 0.8); color: white; }
         .status-irregular { background-color: rgba(239, 68, 68, 0.8); color: white; }
         .status-especial { background-color: rgba(107, 114, 128, 0.8); color: white; }
         .status-verificar { background-color: rgba(168, 85, 247, 0.7); color: white; }
-
-
     </style>
 </head>
 <body class="text-white">
-
-    <!-- Header -->
     <header class="glass-card sticky top-0 z-50 m-4">
         <div class="container mx-auto px-6 py-4">
             <div class="flex flex-wrap items-center justify-between gap-4">
@@ -120,31 +107,24 @@
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="container mx-auto px-4 sm:px-6 py-12">
         <h2 class="text-4xl font-bold text-white mb-8 text-center drop-shadow-lg">Escala de Serviços</h2>
 
-        <!-- Today's Responsibilities -->
         <div id="today-responsibilities" class="glass-card p-6 mb-8 max-w-3xl mx-auto hidden">
             <h3 class="text-2xl font-bold text-center text-white mb-4 drop-shadow-md">
                 <i class="fas fa-calendar-day mr-2 text-purple-300"></i>Postagens de Hoje
             </h3>
             <ul id="today-responsibilities-list" class="space-y-2 sm:columns-2 sm:gap-x-8 text-center sm:text-left">
-                <!-- JS will populate this list -->
             </ul>
         </div>
         
-        <!-- Controls: Filters and Search -->
         <div id="controls-container" class="glass-card p-4 mb-8 max-w-5xl mx-auto">
             <div class="flex flex-col lg:flex-row gap-6">
-                <!-- Team Filter Buttons -->
                 <div class="flex-grow">
                     <label class="block text-sm font-semibold mb-2 text-purple-300">Filtrar por equipe:</label>
                     <div id="team-buttons" class="flex flex-wrap gap-2">
-                        <!-- Buttons will be injected by JS -->
                     </div>
                 </div>
-                <!-- Search -->
                 <div class="lg:border-l lg:border-white/20 lg:pl-6">
                     <label for="search-input" class="block text-sm font-semibold mb-2 text-purple-300">Pesquise seu nick:</label>
                     <div class="flex gap-2">
@@ -157,7 +137,6 @@
             </div>
         </div>
 
-        <!-- Legend -->
         <div id="legend" class="glass-card p-4 mb-8 max-w-2xl mx-auto hidden">
             <h3 class="text-lg font-semibold text-center mb-3">Legenda de Cores</h3>
             <ul class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 text-sm text-center">
@@ -168,31 +147,25 @@
             </ul>
         </div>
 
-        <!-- Loading Spinner -->
         <div id="loading" class="text-center py-10">
             <i class="fas fa-spinner fa-spin text-4xl text-white"></i>
             <p class="mt-2 text-white/80">Carregando e verificando escalas...</p>
         </div>
         
-        <!-- Messages Container -->
         <div id="message-container" class="text-center py-10"></div>
 
-        <!-- Schedule Container -->
         <div id="schedule-container" class="space-y-12">
-            <!-- As escalas das equipes serão inseridas aqui -->
         </div>
 
     </main>
 
-    <!-- Footer -->
     <footer class="glass-card mt-12 mx-4 mb-4">
         <div class="container mx-auto px-6 py-4 text-center text-white/70 text-sm">
-            <p class="mb-1">&copy; 2024 Serviço de Proteção dos Professores. Todos os direitos reservados.</p>
+            <p class="mb-1">&copy; 2025 Serviço de Proteção dos Professores. Todos os direitos reservados.</p>
             <p>Desenvolvido por <strong class="text-white/90">Pegas</strong> e idealizado por <strong class="text-white/90">Sr.Gabriel</strong>.</p>
         </div>
     </footer>
 
-    <!-- Floating Action Buttons -->
     <div class="fixed bottom-6 right-6 z-40 flex flex-col gap-4">
         <button id="performance-btn" class="h-14 w-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110" title="Consulta de Desempenho">
             <i class="fas fa-chart-line text-2xl"></i>
@@ -205,7 +178,6 @@
         </button>
     </div>
     
-    <!-- Performance Modal -->
     <div id="performance-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
         <div class="glass-card max-w-4xl w-full m-4 p-6 rounded-2xl">
             <div class="flex justify-between items-center mb-4">
@@ -214,13 +186,10 @@
             </div>
             <div id="performance-period" class="text-center text-purple-300 mb-4"></div>
             <div id="performance-list-container" class="max-h-[60vh] overflow-y-auto pr-2">
-                <!-- JS will populate this list -->
             </div>
         </div>
     </div>
 
-
-    <!-- Warnings Modal -->
     <div id="warnings-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
         <div class="glass-card max-w-2xl w-full m-4 p-6 rounded-2xl">
             <div class="flex justify-between items-center mb-4">
@@ -229,14 +198,11 @@
             </div>
             <div id="warnings-list-container" class="max-h-[60vh] overflow-y-auto pr-2">
                 <ul id="warnings-list" class="space-y-3">
-                    <!-- JS will populate this list -->
                 </ul>
             </div>
         </div>
     </div>
 
-
-    <!-- Help Modal -->
     <div id="help-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
         <div class="glass-card max-w-lg w-full m-4 p-6 rounded-2xl">
             <div class="flex justify-between items-center mb-4">
@@ -266,9 +232,7 @@
         </div>
     </div>
 
-
     <script>
-        // --- Configuration ---
         const API_KEY = 'AIzaSyBQhWdy4iyFCk9Lh89x8weSIyl0knXgA34';
         const SCHEDULE_SPREADSHEET_ID = '19u9h0OnF_BlD5w8rTE9zaksh3ImMemXFQm1oob_A1Eo';
         const REPORTS_SPREADSHEET_ID = '18iZ8Dm4rCQL2y5Rurqpb61zh3RZpUApBArjNrrHufOY';
@@ -281,12 +245,10 @@
             { name: '[SPP] Equipe Ômega', reportTab: null, range: 'C14:C16' }
         ];
         
-        // --- Global State ---
         let processedSchedule = [];
         let activityMaps = {};
         let memberInfoMap = new Map();
 
-        // --- DOM Elements ---
         const loadingEl = document.getElementById('loading');
         const legendEl = document.getElementById('legend');
         const scheduleContainer = document.getElementById('schedule-container');
@@ -295,14 +257,12 @@
         const searchInput = document.getElementById('search-input');
         const searchBtn = document.getElementById('search-btn');
 
-        // --- Date Helper ---
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         function parseDate(dateStr) {
             if (!dateStr || typeof dateStr !== 'string') return null;
             
-            // Try "DD/MM/YYYY" format
             if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
                 const [day, month, year] = dateStr.split('/');
                 const date = new Date(year, month - 1, day);
@@ -310,7 +270,6 @@
                 return date;
             }
             
-            // Try "DD mon.YYYY" format
             const monthMap = { 'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3, 'mai': 4, 'jun': 5, 'jul': 6, 'ago': 7, 'set': 8, 'out': 9, 'nov': 10, 'dez': 11 };
             const cleanedStr = dateStr.replace('.', '').toLowerCase();
             const parts = cleanedStr.split(' ');
@@ -322,7 +281,6 @@
             return date;
         }
 
-        // --- Data Fetching and Processing ---
         async function fetchAllData() {
             try {
                 const [scheduleData, reportData, memberData] = await Promise.all([ 
@@ -486,7 +444,6 @@
             return { class: '', tooltip: `Prazo: ${dateStr}` };
         }
         
-        // --- Rendering ---
         function renderTodaysResponsibilities(schedule) {
             const todayStr = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
             const container = document.getElementById('today-responsibilities');
@@ -697,7 +654,6 @@
                 performanceData.push({ cargo: member.cargo, nick: member.nick, status, motivo });
             });
             
-            // Render the table
             const tableHTML = `
                 <table class="min-w-full text-sm text-center">
                     <thead class="bg-black/30">
@@ -863,7 +819,6 @@
             return teamElement;
         }
 
-        // --- Event Handlers ---
         function handleSearch() {
             const searchTerm = searchInput.value.trim().toLowerCase();
             if (!searchTerm) {
@@ -873,14 +828,12 @@
 
             let found = false;
             for (const team of processedSchedule) {
-                // Check if the Perito matches
                 if (team.peritoResponsavel.toLowerCase() === searchTerm) {
                     displaySchedules(team.id, team.peritoResponsavel);
                     found = true;
                     break;
                 }
 
-                // Check if a member matches
                 const members = team.isOmega ? team.tableData : team.tableData.slice(1);
                 const foundMember = members.find(row => row[0] && row[0].toLowerCase() === searchTerm);
 
@@ -897,7 +850,6 @@
             }
         }
 
-        // --- Event Listeners ---
         window.addEventListener('load', fetchAllData);
 
         teamButtonsContainer.addEventListener('click', (e) => {
@@ -914,7 +866,6 @@
             }
         });
 
-        // --- Modal Listeners ---
         function setupModal(buttonId, modalId, closeButtonId) {
             const button = document.getElementById(buttonId);
             const modal = document.getElementById(modalId);
@@ -932,7 +883,6 @@
         setupModal('help-btn', 'help-modal', 'close-help-btn');
         setupModal('warnings-btn', 'warnings-modal', 'close-warnings-btn');
         setupModal('performance-btn', 'performance-modal', 'close-performance-btn');
-
     </script>
 </body>
 </html>
