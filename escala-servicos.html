@@ -121,7 +121,7 @@
             <h3 class="text-2xl font-bold text-center text-white mb-4 drop-shadow-md">
                 <i class="fas fa-calendar-day mr-2 text-purple-300"></i>Postagens de Hoje
             </h3>
-            <ul id="today-responsibilities-list" class="space-y-2 sm:columns-2 sm:gap-x-8 text-center sm:text-left">
+            <ul id="today-responsibilities-list">
             </ul>
         </div>
         
@@ -311,7 +311,8 @@
                 renderTodaysResponsibilities(processedSchedule);
                 renderWarnings(processedSchedule);
                 calculateAndRenderPerformance(processedSchedule, memberInfoMap);
-                displaySchedules('all');
+                
+                messageContainer.innerHTML = `<div class="glass-card text-purple-300 text-center p-6"><p class="text-xl font-semibold">Selecione uma equipe ou pesquise o seu nick para começar.</p></div>`;
                 
                 legendEl.classList.remove('hidden');
 
@@ -368,7 +369,7 @@
 
                 const teamObject = {
                     id: team.name,
-                    name: team.name.replace('[SPP] ', ''),
+                    name: team.name.replace('[SPP] Equipe ', ''),
                     isOmega: team.name.includes('Ômega'),
                     peritoResponsavel: peritoResponsavel.split(/ e | & /).map(p => p.trim()),
                     periodoReferencia: data.valueRanges[rangeCursor + 3]?.values?.[0] || [],
@@ -388,7 +389,6 @@
                 return teamObject;
             });
         }
-
 
         function processReportData(data) {
             const fiscalizacoes = new Map(); 
@@ -518,153 +518,35 @@
             }
             
             const analystJustified = activityMaps.justificativas.has(`${dateAnalisada}-${originalAnalyst.toLowerCase()}`) || activityMaps.justificativas.has(`${analystDeadlineStr}-${originalAnalyst.toLowerCase()}`);
-            if (analystJustified) {
-                 return { class: 'status-justificado', tooltip: `Tarefa de ${dateAnalisada} foi justificada pelo analista ${originalAnalyst}` };
-            }
+            const justificationTooltip = analystJustified ? `O analista ${originalAnalyst} justificou a ausência.` : `Analista não finalizou.`;
 
             const analystDeadline = parseDate(analystDeadlineStr);
             if (!analystDeadline) return { class: '', tooltip: 'Prazo do analista inválido.' };
-            
-            const now = new Date();
-            const alertEndDate = new Date(analystDeadline.getTime());
-            alertEndDate.setDate(alertEndDate.getDate() + 3);
-            alertEndDate.setHours(0, 0, 0, 0);
 
-            if (now < alertEndDate) {
+            const analystDeadlineEnd = new Date(analystDeadline);
+            analystDeadlineEnd.setHours(23, 59, 59, 999); 
+
+            const now = new Date();
+
+            if (now <= analystDeadlineEnd) {
+                return { class: '', tooltip: `Aguardando prazo do analista (${analystDeadlineStr}) finalizar.` };
+            }
+
+            const peritoDeadline = new Date(analystDeadlineEnd.getTime() + 48 * 60 * 60 * 1000); 
+            
+            if (now < peritoDeadline) {
                 const timerId = `timer-${peritoNick}-${dateAnalisada}`.replace(/[^a-zA-Z0-9-]/g, '');
                 
-                 countdownTimers.push({ 
+                countdownTimers.push({ 
                     elementId: timerId, 
-                    endTime: alertEndDate.getTime(),
+                    endTime: peritoDeadline.getTime(),
                     originalCellId: `cell-${peritoNick}-${dateAnalisada}`.replace(/[^a-zA-Z0-9-]/g, '')
-                 });
+                });
 
-                return { class: 'status-alerta', tooltip: `Analista ${originalAnalyst} não finalizou. Prazo para o perito agir termina em 48h.`, timerId: timerId, isAlert: true };
+                return { class: 'status-alerta', tooltip: `${justificationTooltip} Prazo para o perito agir termina em 48h.`, timerId: timerId, isAlert: true };
             }
 
-            return { class: 'status-pendente', tooltip: `Pendente para o perito. O prazo de 48h do analista expirou.` };
-        }
-        
-        function renderTodaysResponsibilities(schedule) {
-            const todayStr = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const container = document.getElementById('today-responsibilities');
-            const list = document.getElementById('today-responsibilities-list');
-            list.innerHTML = ''; 
-        
-            let hasAnyResponsibility = false;
-        
-            schedule.forEach(teamData => {
-                if (teamData.isOmega) return;
-        
-                const todaysPosters = new Map();
-                const tableRowsData = teamData.tableData.slice(1);
-        
-                tableRowsData.forEach(row => {
-                    const nick = row[0] || '';
-                    if (!nick) return;
-        
-                    const isPeritoRow = nick.toLowerCase() === 'perito';
-                    const memberNames = isPeritoRow ? teamData.peritoResponsavel : [nick];
-        
-                    const postDates = [row[6], row[7]]; 
-                    
-                    postDates.forEach((date, index) => {
-                        if (date === todayStr) {
-                            hasAnyResponsibility = true;
-                            const fiscDate = row[index === 0 ? 3 : 4]; 
-                            
-                            memberNames.forEach(memberName => {
-                                const isCompleted = activityMaps.fiscalizacoes.has(fiscDate) && activityMaps.fiscalizacoes.get(fiscDate).includes(memberName.toLowerCase());
-                                if (!todaysPosters.has(memberName)) {
-                                     todaysPosters.set(memberName, { name: memberName, team: teamData.name, tasks: [] });
-                                }
-                                todaysPosters.get(memberName).tasks.push({fiscDate, isCompleted});
-                            });
-                        }
-                    });
-                });
-        
-                todaysPosters.forEach((poster, name) => {
-                    const allTasksCompleted = poster.tasks.every(t => t.isCompleted);
-                    const icon = allTasksCompleted 
-                        ? `<i class="fas fa-check-circle text-green-400 ml-2" title="Concluído"></i>` 
-                        : '';
-                    
-                    const listItem = document.createElement('li');
-                    listItem.className = 'text-white';
-                    listItem.innerHTML = `<strong class="text-purple-300">${poster.team}:</strong> ${poster.name}${icon}`;
-                    list.appendChild(listItem);
-                });
-            });
-        
-            if (list.children.length === 0) {
-                const listItem = document.createElement('li');
-                listItem.className = 'text-gray-400 text-center col-span-full';
-                listItem.textContent = 'Nenhuma postagem agendada para hoje.';
-                list.appendChild(listItem);
-            }
-            
-            container.classList.remove('hidden');
-        }
-
-        function renderWarnings(schedule) {
-            const list = document.getElementById('warnings-list');
-            const warnings = [];
-
-            schedule.forEach(teamData => {
-                if (teamData.isOmega) return;
-                const tableRowsData = teamData.tableData.slice(1);
-
-                tableRowsData.forEach(row => {
-                    const nick = row[0] || '';
-                    if (!nick) return;
-
-                    const isPeritoRow = nick.toLowerCase() === 'perito';
-                    const memberNames = isPeritoRow ? teamData.peritoResponsavel : [nick];
-
-                    const tasks = [
-                        { fiscDate: row[3], postDate: row[6] },
-                        { fiscDate: row[4], postDate: row[7] }
-                    ];
-
-                    memberNames.forEach(memberName => {
-                        tasks.forEach(task => {
-                            const deadline = parseDate(task.postDate);
-                            if (deadline && deadline < today) {
-                                const isDoneBySelf = activityMaps.fiscalizacoes.has(task.fiscDate) && activityMaps.fiscalizacoes.get(task.fiscDate).includes(memberName.toLowerCase());
-                                const fiscJustificationKey = `${task.fiscDate}-${memberName.toLowerCase()}`;
-                                const postJustificationKey = task.postDate ? `${task.postDate}-${memberName.toLowerCase()}` : null;
-                                const isJustified = activityMaps.justificativas.has(fiscJustificationKey) || (postJustificationKey && activityMaps.justificativas.has(postJustificationKey));
-                                
-                                if (!isDoneBySelf && !isJustified) {
-                                    warnings.push({
-                                        nick: memberName,
-                                        team: teamData.name,
-                                        fiscDate: task.fiscDate,
-                                        postDate: task.postDate
-                                    });
-                                }
-                            }
-                        });
-                    });
-                });
-            });
-
-            if (warnings.length > 0) {
-                list.innerHTML = warnings.map(w => `
-                    <li class="bg-red-900/40 p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-2">
-                        <div class="mb-2 sm:mb-0 text-center sm:text-left">
-                            <strong class="text-yellow-300">${w.nick}</strong>
-                            <span class="text-gray-300">(${w.team})</span>
-                        </div>
-                        <div class="text-sm text-gray-200 text-center sm:text-right">
-                            Tarefa de <strong>${w.fiscDate}</strong> com prazo em <strong>${w.postDate}</strong> não cumprida.
-                        </div>
-                    </li>
-                `).join('');
-            } else {
-                list.innerHTML = `<li class="text-green-400 text-center p-4">Nenhuma advertência pendente. Todos em dia!</li>`;
-            }
+            return { class: 'status-pendente', tooltip: `Pendente para o perito. ${justificationTooltip} O prazo de ação expirou.` };
         }
         
         function calculateAndRenderPerformance(schedule, members) {
@@ -696,6 +578,17 @@
                     return;
                 }
                 
+                const memberTeam = schedule.find(team => 
+                    team.tableData.slice(team.isOmega ? 0 : 1).some(row => row[0] && row[0].toLowerCase() === nickLower)
+                );
+                
+                if (memberTeam && memberTeam.isOmega) {
+                    status = 'VERIFICAR';
+                    motivo = 'EQUIPE ÔMEGA';
+                    performanceData.push({ cargo: member.cargo, nick: member.nick, status, motivo });
+                    return;
+                }
+
                 if (member.retornoLicenca && member.terminoLicenca && startDate && endDate && member.terminoLicenca >= startDate && member.terminoLicenca <= endDate) {
                     status = 'CASO ESPECIAL'; motivo = 'RET. LICENÇA';
                     performanceData.push({ cargo: member.cargo, nick: member.nick, status, motivo });
@@ -713,52 +606,47 @@
                     performanceData.push({ cargo: member.cargo, nick: member.nick, status, motivo });
                     return;
                 }
-
-                let scheduleRow = null;
-                for (const teamData of schedule) {
-                    if (teamData.isOmega) continue;
-                    const foundRow = teamData.tableData.slice(1).find(r => r[0] && r[0].toLowerCase() === nickLower);
-                    if (foundRow) {
-                        scheduleRow = foundRow;
-                        break;
-                    }
-                }
                 
-                if (scheduleRow) {
-                    const tasks = [
-                        { fisc: scheduleRow[3], post: scheduleRow[6] },
-                        { fisc: scheduleRow[4], post: scheduleRow[7] }
-                    ];
-                    let doneCount = 0;
-                    let justifiedCount = 0;
+                if (memberTeam) {
+                     const scheduleRow = memberTeam.tableData.slice(1).find(r => r[0] && r[0].toLowerCase() === nickLower);
+                     if (scheduleRow) {
+                        const tasks = [
+                            { fisc: scheduleRow[3], post: scheduleRow[6] },
+                            { fisc: scheduleRow[4], post: scheduleRow[7] }
+                        ];
+                        let doneCount = 0;
+                        let justifiedCount = 0;
 
-                    tasks.forEach(task => {
-                        if (task.fisc && task.fisc !== '-') {
-                            const isDone = activityMaps.fiscalizacoes.has(task.fisc) && activityMaps.fiscalizacoes.get(task.fisc).includes(nickLower);
-                            const fiscJustified = activityMaps.justificativas.has(`${task.fisc}-${nickLower}`);
-                            const postJustified = task.post ? activityMaps.justificativas.has(`${task.post}-${nickLower}`) : false;
-                            const isJustified = fiscJustified || postJustified;
-                            
-                            if (isDone) doneCount++;
-                            if (isJustified) justifiedCount++;
+                        tasks.forEach(task => {
+                            if (task.fisc && task.fisc !== '-') {
+                                const isDone = activityMaps.fiscalizacoes.has(task.fisc) && activityMaps.fiscalizacoes.get(task.fisc).includes(nickLower);
+                                const fiscJustified = activityMaps.justificativas.has(`${task.fisc}-${nickLower}`);
+                                const postJustified = task.post ? activityMaps.justificativas.has(`${task.post}-${nickLower}`) : false;
+                                const isJustified = fiscJustified || postJustified;
+                                
+                                if (isDone) doneCount++;
+                                if (isJustified) justifiedCount++;
+                            }
+                        });
+                        
+                        if (justifiedCount > 0) {
+                            status = 'CASO ESPECIAL';
+                            motivo = 'JUSTIFICOU';
+                            if (justifiedCount === 2) {
+                                motivo += ' <i class="fas fa-triangle-exclamation text-yellow-300 ml-1" title="Justificou as duas tarefas"></i>';
+                            }
+                        } else if (doneCount === 2) {
+                            status = 'REGULAR';
+                        } else {
+                            status = 'IRREGULAR';
                         }
-                    });
-                    
-                    if (justifiedCount > 0) {
+                     } else {
                         status = 'CASO ESPECIAL';
-                        motivo = 'JUSTIFICOU';
-                        if (justifiedCount === 2) {
-                            motivo += ' <i class="fas fa-triangle-exclamation text-yellow-300 ml-1" title="Justificou as duas tarefas"></i>';
-                        }
-                    } else if (doneCount === 2) {
-                        status = 'REGULAR';
-                    } else {
-                        status = 'IRREGULAR';
-                    }
-
+                        motivo = 'RESERVA';
+                     }
                 } else {
                     status = 'CASO ESPECIAL';
-                    motivo = 'RESERVA';
+                    motivo = 'SEM EQUIPE';
                 }
                 
                 performanceData.push({ cargo: member.cargo, nick: member.nick, status, motivo });
@@ -794,7 +682,7 @@
         }
 
         function renderControls() {
-            teamButtonsContainer.innerHTML = `<button class="control-btn active font-semibold py-2 px-4 rounded-md" data-team-id="all">Todas</button>`;
+            teamButtonsContainer.innerHTML = `<button class="control-btn font-semibold py-2 px-4 rounded-md" data-team-id="all">Todos</button>`;
             processedSchedule.forEach(team => {
                 teamButtonsContainer.innerHTML += `<button class="control-btn font-semibold py-2 px-4 rounded-md" data-team-id="${team.id}">${team.name}</button>`;
             });
@@ -825,16 +713,19 @@
             });
         }
 
-        function displaySchedules(teamIdFilter, highlightedNick = null) {
+        function displaySchedules(teamIdFilter, highlightedNick = null, isInitialLoad = false) {
             scheduleContainer.innerHTML = '';
             messageContainer.innerHTML = '';
             countdownTimers = []; 
             
             if(timerInterval) clearInterval(timerInterval);
             
-            document.querySelectorAll('#team-buttons .control-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.teamId === teamIdFilter);
-            });
+            document.querySelectorAll('#team-buttons .control-btn').forEach(btn => btn.classList.remove('active'));
+
+            if (!isInitialLoad) {
+                const activeButton = document.querySelector(`#team-buttons .control-btn[data-team-id="${teamIdFilter}"]`);
+                if (activeButton) activeButton.classList.add('active');
+            }
             
             if(teamIdFilter !== 'all' && !highlightedNick) {
                 searchInput.value = '';
@@ -962,7 +853,7 @@
             }
             
             teamElement.innerHTML = `
-                <h3 class="text-3xl font-bold text-center text-white mb-2 drop-shadow-md">${teamData.name}</h3>
+                <h3 class="text-3xl font-bold text-center text-white mb-2 drop-shadow-md">Equipe ${teamData.name}</h3>
                 <p class="text-center text-purple-300 mb-6"><strong>Perito Responsável:</strong> ${teamData.peritoResponsavel.join(' e ')}</p>
                 <div class="bg-black/20 p-4 rounded-xl">
                     <div class="overflow-x-auto">
@@ -989,7 +880,7 @@
             `;
             return teamElement;
         }
-
+        
         function renderOmegaTeam(teamData, highlightedNick = null) {
             const teamElement = document.createElement('div');
             teamElement.className = 'glass-card text-white p-6';
@@ -1001,15 +892,18 @@
             }).join('');
             
             teamElement.innerHTML = `
-                <h3 class="text-3xl font-bold text-center text-cyan-400 mb-2 drop-shadow-md">${teamData.name}</h3>
+                <h3 class="text-3xl font-bold text-center text-cyan-400 mb-2 drop-shadow-md">Equipe ${teamData.name}</h3>
                 <p class="text-center text-gray-300 mb-6"><strong>Perito Responsável:</strong> ${teamData.peritoResponsavel.join(' e ')}</p>
                 <div class="bg-black/20 p-4 rounded-xl">
                     <h4 class="font-semibold text-lg text-center mb-3">Membros da Equipe</h4>
                     <ul class="space-y-2 text-center">${nicksHTML}</ul>
                 </div>
-                <div class="text-center mt-6">
-                    <a href="https://www.policiarcc.com/t31666-spp-orientacoes-aos-analistas" target="_blank" rel="noopener noreferrer" class="inline-block bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-lg">
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-6">
+                    <a href="https://www.policiarcc.com/t31666-spp-orientacoes-aos-analistas" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto inline-block bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-5 rounded-lg transition-colors shadow-lg text-center">
                         <i class="fas fa-book-open mr-2"></i>Orientações aos Analistas
+                    </a>
+                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdmEdmWev23IVc2iN_qjVnqxVEI4t4Au9-cvE6tJCon5Nts2A/viewform" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto inline-block bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-5 rounded-lg transition-colors shadow-lg text-center">
+                        <i class="fas fa-user-plus mr-2"></i>Cadastrar sua fake
                     </a>
                 </div>`;
             return teamElement;
@@ -1097,6 +991,124 @@
         setupModal('help-btn', 'help-modal', 'close-help-btn');
         setupModal('warnings-btn', 'warnings-modal', 'close-warnings-btn');
         setupModal('performance-btn', 'performance-modal', 'close-performance-btn');
+
+        function renderTodaysResponsibilities(schedule) {
+            const todayStr = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const container = document.getElementById('today-responsibilities');
+            const list = document.getElementById('today-responsibilities-list');
+            list.innerHTML = '';
+            
+            let posterCount = 0;
+
+            schedule.forEach(teamData => {
+                if (teamData.isOmega) return;
+                const todaysPosters = new Map();
+                const tableRowsData = teamData.tableData.slice(1);
+                tableRowsData.forEach(row => {
+                    const nick = row[0] || '';
+                    if (!nick) return;
+
+                    const isPeritoRow = nick.toLowerCase() === 'perito';
+                    const memberNames = isPeritoRow ? teamData.peritoResponsavel : [nick];
+                    const postDates = [row[6], row[7]]; 
+
+                    postDates.forEach((date, index) => {
+                        if (date === todayStr) {
+                            const fiscDate = row[index === 0 ? 3 : 4]; 
+                            memberNames.forEach(memberName => {
+                                const isCompleted = activityMaps.fiscalizacoes.has(fiscDate) && activityMaps.fiscalizacoes.get(fiscDate).includes(memberName.toLowerCase());
+                                if (!todaysPosters.has(memberName)) {
+                                     todaysPosters.set(memberName, { name: memberName, team: teamData.name, tasks: [] });
+                                }
+                                todaysPosters.get(memberName).tasks.push({fiscDate, isCompleted});
+                            });
+                        }
+                    });
+                });
+
+                todaysPosters.forEach((poster, name) => {
+                    posterCount++;
+                    const allTasksCompleted = poster.tasks.every(t => t.isCompleted);
+                    const icon = allTasksCompleted 
+                        ? `<i class="fas fa-check-circle text-green-400 ml-2" title="Concluído"></i>` 
+                        : '';
+                    const listItem = document.createElement('li');
+                    listItem.className = 'text-white';
+                    listItem.innerHTML = `<strong class="text-purple-300">Equipe ${poster.team}:</strong> ${poster.name}${icon}`;
+                    list.appendChild(listItem);
+                });
+            });
+
+            if (posterCount > 0) {
+                 list.className = 'space-y-2 sm:columns-2 sm:gap-x-8 text-center sm:text-left';
+                 container.classList.remove('hidden');
+            } else {
+                 list.className = 'text-center py-4';
+                 list.innerHTML = `<li class="text-gray-400">Nenhuma postagem agendada para hoje.</li>`;
+                 container.classList.remove('hidden');
+            }
+        }
+
+        function renderWarnings(schedule) {
+            const list = document.getElementById('warnings-list');
+            const warnings = [];
+
+            schedule.forEach(teamData => {
+                if (teamData.isOmega) return;
+                const tableRowsData = teamData.tableData.slice(1);
+
+                tableRowsData.forEach(row => {
+                    const nick = row[0] || '';
+                    if (!nick) return;
+
+                    const isPeritoRow = nick.toLowerCase() === 'perito';
+                    const memberNames = isPeritoRow ? teamData.peritoResponsavel : [nick];
+
+                    const tasks = [
+                        { fiscDate: row[3], postDate: row[6] },
+                        { fiscDate: row[4], postDate: row[7] }
+                    ];
+
+                    memberNames.forEach(memberName => {
+                        tasks.forEach(task => {
+                            const deadline = parseDate(task.postDate);
+                            if (deadline && deadline < today) {
+                                const isDoneBySelf = activityMaps.fiscalizacoes.has(task.fiscDate) && activityMaps.fiscalizacoes.get(task.fiscDate).includes(memberName.toLowerCase());
+                                const fiscJustificationKey = `${task.fiscDate}-${memberName.toLowerCase()}`;
+                                const postJustificationKey = task.postDate ? `${task.postDate}-${memberName.toLowerCase()}` : null;
+                                const isJustified = activityMaps.justificativas.has(fiscJustificationKey) || (postJustificationKey && activityMaps.justificativas.has(postJustificationKey));
+                                
+                                if (!isDoneBySelf && !isJustified) {
+                                    warnings.push({
+                                        nick: memberName,
+                                        team: teamData.name,
+                                        fiscDate: task.fiscDate,
+                                        postDate: task.postDate
+                                    });
+                                }
+                            }
+                        });
+                    });
+                });
+            });
+
+            if (warnings.length > 0) {
+                list.innerHTML = warnings.map(w => `
+                    <li class="bg-red-900/40 p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-2">
+                        <div class="mb-2 sm:mb-0 text-center sm:text-left">
+                            <strong class="text-yellow-300">${w.nick}</strong>
+                            <span class="text-gray-300">(Equipe ${w.team})</span>
+                        </div>
+                        <div class="text-sm text-gray-200 text-center sm:text-right">
+                            Tarefa de <strong>${w.fiscDate}</strong> com prazo em <strong>${w.postDate}</strong> não cumprida.
+                        </div>
+                    </li>
+                `).join('');
+            } else {
+                list.innerHTML = `<li class="text-green-400 text-center p-4">Nenhuma advertência pendente. Todos em dia!</li>`;
+            }
+        }
+
     </script>
 </body>
 </html>
