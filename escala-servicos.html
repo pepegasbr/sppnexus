@@ -93,6 +93,13 @@
             font-weight: 600;
             box-shadow: 0 0 10px rgba(168, 85, 247, 0.7);
         }
+        
+        /* Performance Status Styles */
+        .status-regular { background-color: rgba(34, 197, 94, 0.8); color: white; }
+        .status-irregular { background-color: rgba(239, 68, 68, 0.8); color: white; }
+        .status-especial { background-color: rgba(107, 114, 128, 0.8); color: white; }
+        .status-verificar { background-color: rgba(168, 85, 247, 0.7); color: white; }
+
 
     </style>
 </head>
@@ -107,7 +114,7 @@
                     <h1 class="text-xl md:text-2xl font-bold text-white">Serviço de Proteção dos Professores</h1>
                 </div>
                 <nav>
-                    <a href="./index.html" class="text-gray-200 hover:text-white font-semibold px-3 py-2">Voltar à Página Inicial</a>
+                    <a class='text-gray-200 hover:text-white font-semibold px-3 py-2' href='/'>Voltar à Página Inicial</a>
                 </nav>
             </div>
         </div>
@@ -187,6 +194,9 @@
 
     <!-- Floating Action Buttons -->
     <div class="fixed bottom-6 right-6 z-40 flex flex-col gap-4">
+        <button id="performance-btn" class="h-14 w-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110" title="Consulta de Desempenho">
+            <i class="fas fa-chart-line text-2xl"></i>
+        </button>
         <button id="warnings-btn" class="h-14 w-14 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110" title="Painel de Advertências">
             <i class="fas fa-triangle-exclamation text-2xl"></i>
         </button>
@@ -194,19 +204,34 @@
             <i class="fas fa-question text-2xl"></i>
         </button>
     </div>
+    
+    <!-- Performance Modal -->
+    <div id="performance-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+        <div class="glass-card max-w-4xl w-full m-4 p-6 rounded-2xl">
+             <div class="flex justify-between items-center mb-4">
+                 <h3 class="text-2xl font-bold text-white"><i class="fas fa-chart-line mr-2 text-blue-300"></i>Consulta de Desempenho</h3>
+                 <button id="close-performance-btn" class="text-gray-300 hover:text-white text-2xl">&times;</button>
+             </div>
+             <div id="performance-period" class="text-center text-purple-300 mb-4"></div>
+             <div id="performance-list-container" class="max-h-[60vh] overflow-y-auto pr-2">
+                 <!-- JS will populate this list -->
+             </div>
+        </div>
+    </div>
+
 
     <!-- Warnings Modal -->
     <div id="warnings-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
         <div class="glass-card max-w-2xl w-full m-4 p-6 rounded-2xl">
              <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-bold text-white"><i class="fas fa-triangle-exclamation mr-2 text-yellow-300"></i>Painel de Advertências</h3>
-                <button id="close-warnings-btn" class="text-gray-300 hover:text-white text-2xl">&times;</button>
-            </div>
-            <div id="warnings-list-container" class="max-h-[60vh] overflow-y-auto pr-2">
-                <ul id="warnings-list" class="space-y-3">
-                    <!-- JS will populate this list -->
-                </ul>
-            </div>
+                 <h3 class="text-2xl font-bold text-white"><i class="fas fa-triangle-exclamation mr-2 text-yellow-300"></i>Painel de Advertências</h3>
+                 <button id="close-warnings-btn" class="text-gray-300 hover:text-white text-2xl">&times;</button>
+             </div>
+             <div id="warnings-list-container" class="max-h-[60vh] overflow-y-auto pr-2">
+                 <ul id="warnings-list" class="space-y-3">
+                     <!-- JS will populate this list -->
+                 </ul>
+             </div>
         </div>
     </div>
 
@@ -247,6 +272,7 @@
         const API_KEY = 'AIzaSyBQhWdy4iyFCk9Lh89x8weSIyl0knXgA34';
         const SCHEDULE_SPREADSHEET_ID = '19u9h0OnF_BlD5w8rTE9zaksh3ImMemXFQm1oob_A1Eo';
         const REPORTS_SPREADSHEET_ID = '18iZ8Dm4rCQL2y5Rurqpb61zh3RZpUApBArjNrrHufOY';
+        const MEMBERS_SPREADSHEET_ID = '1kFnRqlQ-8Bzlv578t9uC_T0C74jjsK3nbzBgRFTlAJM';
 
         const TEAMS = [
             { name: '[SPP] Equipe Alpha', reportTab: 'Equipe Alpha', range: 'C13:J17' },
@@ -258,6 +284,7 @@
         // --- Global State ---
         let processedSchedule = [];
         let activityMaps = {};
+        let memberInfoMap = new Map();
 
         // --- DOM Elements ---
         const loadingEl = document.getElementById('loading');
@@ -273,9 +300,24 @@
         today.setHours(0, 0, 0, 0);
 
         function parseDate(dateStr) {
-            if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return null;
-            const [day, month, year] = dateStr.split('/');
-            const date = new Date(year, month - 1, day);
+            if (!dateStr || typeof dateStr !== 'string') return null;
+            
+            // Try "DD/MM/YYYY" format
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+                const [day, month, year] = dateStr.split('/');
+                const date = new Date(year, month - 1, day);
+                date.setHours(0,0,0,0);
+                return date;
+            }
+            
+            // Try "DD mon.YYYY" format
+            const monthMap = { 'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3, 'mai': 4, 'jun': 5, 'jul': 6, 'ago': 7, 'set': 8, 'out': 9, 'nov': 10, 'dez': 11 };
+            const cleanedStr = dateStr.replace('.', '').toLowerCase();
+            const parts = cleanedStr.split(' ');
+            if (parts.length !== 3) return null;
+            const [day, monthStr, year] = parts;
+            if (isNaN(day) || isNaN(year) || !monthMap.hasOwnProperty(monthStr)) return null;
+            const date = new Date(year, monthMap[monthStr], day);
             date.setHours(0,0,0,0);
             return date;
         }
@@ -283,13 +325,20 @@
         // --- Data Fetching and Processing ---
         async function fetchAllData() {
             try {
-                const [scheduleData, reportData] = await Promise.all([ fetchScheduleData(), fetchReportData() ]);
+                const [scheduleData, reportData, memberData] = await Promise.all([ 
+                    fetchScheduleData(), 
+                    fetchReportData(),
+                    fetchMemberData()
+                ]);
+                
                 activityMaps = processReportData(reportData);
+                memberInfoMap = processMemberData(memberData.values || []);
                 processedSchedule = processScheduleData(scheduleData);
                 
                 renderControls();
                 renderTodaysResponsibilities(processedSchedule);
                 renderWarnings(processedSchedule);
+                calculateAndRenderPerformance(processedSchedule, memberInfoMap);
                 displaySchedules('all');
                 
                 legendEl.classList.remove('hidden');
@@ -316,6 +365,14 @@
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${REPORTS_SPREADSHEET_ID}/values:batchGet?ranges=${ranges.join('&ranges=')}&key=${API_KEY}`;
             const response = await fetch(url);
             if (!response.ok) throw new Error('Falha ao buscar dados dos relatórios.');
+            return response.json();
+        }
+        
+        async function fetchMemberData() {
+            const range = 'Gerador!B16:I37';
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${MEMBERS_SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Falha ao buscar dados dos membros.');
             return response.json();
         }
 
@@ -362,17 +419,35 @@
                     });
                 } else if (rangeData.range.includes('!N')) {
                      rows.forEach(([nick, , justifDate]) => {
-                        const trimmedNick = nick ? nick.trim() : '';
-                        const trimmedJustifDate = justifDate ? justifDate.trim() : '';
+                         const trimmedNick = nick ? nick.trim() : '';
+                         const trimmedJustifDate = justifDate ? justifDate.trim() : '';
 
-                        if (trimmedNick && trimmedJustifDate) {
-                            const key = `${trimmedJustifDate}-${trimmedNick.toLowerCase()}`;
-                            if(!justificativas.has(key)) justificativas.set(key, true);
-                        }
+                         if (trimmedNick && trimmedJustifDate) {
+                             const key = `${trimmedJustifDate}-${trimmedNick.toLowerCase()}`;
+                             if(!justificativas.has(key)) justificativas.set(key, true);
+                         }
                      });
                 }
             });
             return { fiscalizacoes, postagens, justificativas };
+        }
+        
+        function processMemberData(memberRows) {
+            const map = new Map();
+            memberRows.forEach(row => {
+                const nick = row[1];
+                if (nick) {
+                    map.set(nick.trim().toLowerCase(), {
+                        cargo: row[0] || null,
+                        nick: nick.trim(),
+                        entrada: parseDate(row[2]),
+                        inicioLicenca: parseDate(row[4]),
+                        terminoLicenca: parseDate(row[6]),
+                        retornoLicenca: row[7] === 'TRUE',
+                    });
+                }
+            });
+            return map;
         }
         
         function getStatus(assignedNick, dateStr, type, deadlineOverrideDateStr = null) {
@@ -390,8 +465,9 @@
             const nickLower = assignedNick.toLowerCase();
             const completedMap = type === 'fiscalizacao' ? activityMaps.fiscalizacoes : activityMaps.postagens;
 
-            if (completedMap.has(dateStr) && completedMap.get(dateStr).includes(nickLower)) {
-                return { class: 'status-feito', tooltip: `Concluído por ${assignedNick} em ${dateStr}` };
+            const completedKey = type === 'fiscalizacao' ? dateStr : scheduleDate.toLocaleDateString('pt-BR');
+            if (completedMap.has(completedKey) && completedMap.get(completedKey).includes(nickLower)) {
+                return { class: 'status-feito', tooltip: `Concluído por ${assignedNick} em ${completedKey}` };
             }
             
             const justificationKey = `${dateStr}-${nickLower}`;
@@ -520,13 +596,135 @@
                             <span class="text-gray-300">(${w.team})</span>
                         </div>
                         <div class="text-sm text-gray-200 text-center sm:text-right">
-                           Tarefa de <strong>${w.fiscDate}</strong> com prazo em <strong>${w.postDate}</strong> não cumprida.
+                            Tarefa de <strong>${w.fiscDate}</strong> com prazo em <strong>${w.postDate}</strong> não cumprida.
                         </div>
                     </li>
                 `).join('');
             } else {
                  list.innerHTML = `<li class="text-green-400 text-center p-4">Nenhuma advertência pendente. Todos em dia!</li>`;
             }
+        }
+        
+        function calculateAndRenderPerformance(schedule, members) {
+            const container = document.getElementById('performance-list-container');
+            const periodEl = document.getElementById('performance-period');
+            let performanceData = [];
+
+            const firstTeam = schedule.find(t => !t.isOmega);
+            const startDate = firstTeam ? parseDate(firstTeam.periodoReferencia[0]) : null;
+            const endDate = firstTeam ? parseDate(firstTeam.periodoReferencia[1]) : null;
+            
+            const peritoNicks = new Set(schedule.map(t => t.peritoResponsavel.toLowerCase()));
+
+            if (firstTeam && startDate && endDate) {
+                periodEl.innerHTML = `<strong>Período de Referência:</strong> ${firstTeam.periodoReferencia[0]} a ${firstTeam.periodoReferencia[1]}`;
+            } else {
+                periodEl.innerHTML = 'Período de referência não definido.';
+            }
+
+            members.forEach(member => {
+                const nickLower = member.nick.toLowerCase();
+                const cargoLower = member.cargo ? member.cargo.toLowerCase() : '';
+                let status = '';
+                let motivo = '-';
+
+                if (['comandante', 'subcomandante', 'perito(a)'].includes(cargoLower) || peritoNicks.has(nickLower)) {
+                    status = 'VERIFICAR';
+                    performanceData.push({ cargo: member.cargo, nick: member.nick, status, motivo });
+                    return;
+                }
+                
+                if (member.retornoLicenca && member.terminoLicenca && startDate && endDate && member.terminoLicenca >= startDate && member.terminoLicenca <= endDate) {
+                    status = 'CASO ESPECIAL'; motivo = 'RET. LICENÇA';
+                    performanceData.push({ cargo: member.cargo, nick: member.nick, status, motivo });
+                    return;
+                }
+
+                if (member.inicioLicenca && (!member.terminoLicenca || member.terminoLicenca >= today)) {
+                    status = 'CASO ESPECIAL'; motivo = 'LICENÇA';
+                    performanceData.push({ cargo: member.cargo, nick: member.nick, status, motivo });
+                    return;
+                }
+                
+                if (member.entrada && startDate && endDate && member.entrada >= startDate && member.entrada <= endDate) {
+                    status = 'CASO ESPECIAL'; motivo = 'NOVATO';
+                    performanceData.push({ cargo: member.cargo, nick: member.nick, status, motivo });
+                    return;
+                }
+
+                let scheduleRow = null;
+                for (const teamData of schedule) {
+                    if (teamData.isOmega) continue;
+                    const foundRow = teamData.tableData.slice(1).find(r => r[0] && r[0].toLowerCase() === nickLower);
+                    if (foundRow) {
+                        scheduleRow = foundRow;
+                        break;
+                    }
+                }
+                
+                if (scheduleRow) {
+                    const tasks = [{ fisc: scheduleRow[3] }, { fisc: scheduleRow[4] }];
+                    let doneCount = 0;
+                    let justifiedCount = 0;
+
+                    tasks.forEach(task => {
+                        if (task.fisc && task.fisc !== '-') {
+                            const isDone = activityMaps.fiscalizacoes.has(task.fisc) && activityMaps.fiscalizacoes.get(task.fisc).includes(nickLower);
+                            const isJustified = activityMaps.justificativas.has(`${task.fisc}-${nickLower}`);
+                            
+                            if (isDone) doneCount++;
+                            if (isJustified) justifiedCount++;
+                        }
+                    });
+                    
+                    if (justifiedCount > 0) {
+                        status = 'CASO ESPECIAL';
+                        motivo = 'JUSTIFICOU';
+                        if (justifiedCount === 2) {
+                             motivo += ' <i class="fas fa-triangle-exclamation text-yellow-300 ml-1" title="Justificou as duas tarefas"></i>';
+                        }
+                    } else if (doneCount === 2) {
+                        status = 'REGULAR';
+                    } else {
+                        status = 'IRREGULAR';
+                    }
+
+                } else {
+                    status = 'CASO ESPECIAL';
+                    motivo = 'RESERVA';
+                }
+                
+                performanceData.push({ cargo: member.cargo, nick: member.nick, status, motivo });
+            });
+            
+            // Render the table
+            const tableHTML = `
+                <table class="min-w-full text-sm text-center">
+                    <thead class="bg-black/30">
+                        <tr>
+                            <th class="py-2 px-3 text-left font-semibold text-purple-300">Cargo</th>
+                            <th class="py-2 px-3 text-left font-semibold text-purple-300">Nick</th>
+                            <th class="py-2 px-3 font-semibold text-purple-300">Status</th>
+                            <th class="py-2 px-3 font-semibold text-purple-300">Motivo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${performanceData.map(p => `
+                            <tr class="border-b border-white/20">
+                                <td class="py-3 px-3 text-left">${p.cargo}</td>
+                                <td class="py-3 px-3 text-left font-semibold">${p.nick}</td>
+                                <td class="py-2 px-3">
+                                    <span class="inline-block w-full py-1 px-3 rounded-md font-semibold status-${p.status.toLowerCase().replace(/ /g, '-').replace('caso-especial','especial')}">
+                                        ${p.status.replace('CASO ESPECIAL', 'C. ESPECIAL')}
+                                    </span>
+                                </td>
+                                <td class="py-3 px-3">${p.motivo}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            container.innerHTML = performanceData.length > 0 ? tableHTML : `<div class="text-center p-4">Não foi possível calcular o desempenho.</div>`;
         }
 
         function renderControls() {
@@ -552,7 +750,7 @@
                 ? processedSchedule 
                 : processedSchedule.filter(t => t.id === teamIdFilter);
 
-            if (teamsToDisplay.length === 0) {
+            if (teamsToDisplay.length === 0 && highlightedNick) {
                  messageContainer.innerHTML = `<div class="glass-card text-yellow-300 text-center p-4"><p>Nenhum membro encontrado com o nick "${highlightedNick}".</p></div>`;
                  return;
             }
@@ -583,8 +781,6 @@
             const tableHeaders = teamData.tableData[0] || [];
             const tableRowsData = teamData.tableData.slice(1);
             
-            const analistasResponsaveis = tableRowsData.filter(r => r[0] && r[0].toLowerCase() !== 'perito').map(r => r[0]).join(', ');
-
             let tableRowsHTML = tableRowsData.map(row => {
                 const nick = row[0] || ''; if (!nick) return '';
                 
@@ -618,9 +814,9 @@
                 <h3 class="text-3xl font-bold text-center text-white mb-2 drop-shadow-md">${teamData.name}</h3>
                 <p class="text-center text-purple-300 mb-6"><strong>Perito Responsável:</strong> ${teamData.peritoResponsavel}</p>
                 <div class="bg-black/20 p-4 rounded-xl">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-4 p-2 bg-black/20 rounded-lg items-center">
-                        <div><strong class="text-purple-300">Analistas Responsáveis:</strong><br>${analistasResponsaveis || 'Nenhum'}</div>
-                        <div class="font-bold text-lg">${teamData.tituloFiscalizacao}</div><div class="font-bold text-lg">${teamData.tituloPostagem}</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center mb-4 p-2 bg-black/20 rounded-lg items-center">
+                        <div class="font-bold text-lg">${teamData.tituloFiscalizacao}</div>
+                        <div class="font-bold text-lg">${teamData.tituloPostagem}</div>
                     </div>
                     <div class="overflow-x-auto"><table class="min-w-full text-sm">
                         <thead class="bg-black/30"><tr>
@@ -730,6 +926,7 @@
 
         setupModal('help-btn', 'help-modal', 'close-help-btn');
         setupModal('warnings-btn', 'warnings-modal', 'close-warnings-btn');
+        setupModal('performance-btn', 'performance-modal', 'close-performance-btn');
 
     </script>
 </body>
