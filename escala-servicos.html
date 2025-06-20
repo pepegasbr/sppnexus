@@ -233,7 +233,7 @@
     </div>
 
     <script>
-        const API_KEY = 'AIzaSyBQhWdy4iyFCk9Lh89x8weSIyl0knXgA34'; // IMPORTANT: Replace with your actual Google Sheets API Key
+        const API_KEY = 'AIzaSyBQhWdy4iyFCk9Lh89x8weSIyl0knXgA34';
         const SCHEDULE_SPREADSHEET_ID = '19u9h0OnF_BlD5w8rTE9zaksh3ImMemXFQm1oob_A1Eo';
         const REPORTS_SPREADSHEET_ID = '18iZ8Dm4rCQL2y5Rurqpb61zh3RZpUApBArjNrrHufOY';
         const MEMBERS_SPREADSHEET_ID = '1kFnRqlQ-8Bzlv578t9uC_T0C74jjsK3nbzBgRFTlAJM';
@@ -263,7 +263,6 @@
         function parseDate(dateStr) {
             if (!dateStr || typeof dateStr !== 'string') return null;
             
-            // Format: DD/MM/YYYY
             if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
                 const [day, month, year] = dateStr.split('/');
                 const date = new Date(year, month - 1, day);
@@ -271,7 +270,6 @@
                 return date;
             }
             
-            // Format: "DD de Mês de YYYY" (e.g., "01 de jan. de 2024")
             const monthMap = { 'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3, 'mai': 4, 'jun': 5, 'jul': 6, 'ago': 7, 'set': 8, 'out': 9, 'nov': 10, 'dez': 11 };
             const cleanedStr = dateStr.replace('.', '').replace(' de', '').toLowerCase();
             const parts = cleanedStr.split(' ');
@@ -285,7 +283,6 @@
 
         async function fetchAllData() {
             try {
-                // Check for API Key
                 if (API_KEY === 'YOUR_API_KEY') {
                     throw new Error('API_KEY não foi configurada. Por favor, edite o script e adicione sua chave da API do Google Sheets.');
                 }
@@ -364,7 +361,7 @@
             
             data.valueRanges.forEach(rangeData => {
                 const rows = rangeData.values || [];
-                if (rangeData.range.includes('!C')) { // Reports data
+                if (rangeData.range.includes('!C')) { 
                     rows.forEach(([timestamp, nick, , fiscDate]) => {
                         const trimmedNick = nick ? nick.trim() : '';
                         const trimmedFiscDate = fiscDate ? fiscDate.trim() : '';
@@ -380,7 +377,7 @@
                             postagens.get(postDate).push(trimmedNick.toLowerCase());
                         }
                     });
-                } else if (rangeData.range.includes('!N')) { // Justifications data
+                } else if (rangeData.range.includes('!N')) { 
                     rows.forEach(([nick, , justifDate]) => {
                         const trimmedNick = nick ? nick.trim() : '';
                         const trimmedJustifDate = justifDate ? justifDate.trim() : '';
@@ -427,18 +424,16 @@
             
             const nickLower = assignedNick.toLowerCase();
             
-            // Check if it was completed
             if (activityMaps.fiscalizacoes.has(dateStr) && activityMaps.fiscalizacoes.get(dateStr).includes(nickLower)) {
                 return { class: 'status-feito', tooltip: `Concluído por ${assignedNick}` };
             }
             
-            // Check if it was justified
-            const justificationKey = `${dateStr}-${nickLower}`;
-            if (activityMaps.justificativas.has(justificationKey)) {
-                return { class: 'status-justificado', tooltip: `Justificado por ${assignedNick} para ${dateStr}` };
+            const fiscJustificationKey = `${dateStr}-${nickLower}`;
+            const postJustificationKey = deadlineOverrideDateStr ? `${deadlineOverrideDateStr}-${nickLower}` : null;
+            if (activityMaps.justificativas.has(fiscJustificationKey) || (postJustificationKey && activityMaps.justificativas.has(postJustificationKey))) {
+                return { class: 'status-justificado', tooltip: `Justificado por ${assignedNick} para a tarefa de ${dateStr}` };
             }
 
-            // Check against today's date for pending/due status
             if (deadlineDate.getTime() === today.getTime()) {
                 return { class: 'status-hoje', tooltip: `Prazo final hoje (${deadlineOverrideDateStr || dateStr})` };
             }
@@ -535,8 +530,9 @@
                         const deadline = parseDate(task.postDate);
                         if (deadline && deadline < today) {
                             const isDoneBySelf = activityMaps.fiscalizacoes.has(task.fiscDate) && activityMaps.fiscalizacoes.get(task.fiscDate).includes(memberName.toLowerCase());
-                            const justificationKey = `${task.fiscDate}-${memberName.toLowerCase()}`;
-                            const isJustified = activityMaps.justificativas.has(justificationKey);
+                            const fiscJustificationKey = `${task.fiscDate}-${memberName.toLowerCase()}`;
+                            const postJustificationKey = task.postDate ? `${task.postDate}-${memberName.toLowerCase()}` : null;
+                            const isJustified = activityMaps.justificativas.has(fiscJustificationKey) || (postJustificationKey && activityMaps.justificativas.has(postJustificationKey));
                             
                             if (!isDoneBySelf && !isJustified) {
                                 warnings.push({
@@ -626,14 +622,19 @@
                 }
                 
                 if (scheduleRow) {
-                    const tasks = [{ fisc: scheduleRow[3] }, { fisc: scheduleRow[4] }];
+                    const tasks = [
+                        { fisc: scheduleRow[3], post: scheduleRow[6] },
+                        { fisc: scheduleRow[4], post: scheduleRow[7] }
+                    ];
                     let doneCount = 0;
                     let justifiedCount = 0;
 
                     tasks.forEach(task => {
                         if (task.fisc && task.fisc !== '-') {
                             const isDone = activityMaps.fiscalizacoes.has(task.fisc) && activityMaps.fiscalizacoes.get(task.fisc).includes(nickLower);
-                            const isJustified = activityMaps.justificativas.has(`${task.fisc}-${nickLower}`);
+                            const fiscJustified = activityMaps.justificativas.has(`${task.fisc}-${nickLower}`);
+                            const postJustified = task.post ? activityMaps.justificativas.has(`${task.post}-${nickLower}`) : false;
+                            const isJustified = fiscJustified || postJustified;
                             
                             if (isDone) doneCount++;
                             if (isJustified) justifiedCount++;
