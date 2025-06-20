@@ -59,9 +59,9 @@
         }
         
         .highlight-row {
-             background-color: rgba(134, 44, 204, 0.7) !important;
-             box-shadow: 0 0 15px rgba(192, 132, 252, 0.5);
-             font-weight: 700;
+            background-color: rgba(134, 44, 204, 0.7) !important;
+            box-shadow: 0 0 15px rgba(192, 132, 252, 0.5);
+            font-weight: 700;
         }
         tr.highlight-row td {
             color: #fff !important;
@@ -146,13 +146,13 @@
                 </div>
                 <!-- Search -->
                 <div class="lg:border-l lg:border-white/20 lg:pl-6">
-                     <label for="search-input" class="block text-sm font-semibold mb-2 text-purple-300">Pesquise seu nick:</label>
-                     <div class="flex gap-2">
-                         <input type="text" id="search-input" placeholder="Digite o nick ou perito..." class="w-full bg-black/20 rounded-md py-2 px-3 border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-500 transition">
-                         <button id="search-btn" class="control-btn font-semibold py-2 px-4 rounded-md">
-                             <i class="fas fa-search"></i>
-                         </button>
-                     </div>
+                    <label for="search-input" class="block text-sm font-semibold mb-2 text-purple-300">Pesquise seu nick:</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="search-input" placeholder="Digite o nick ou perito..." class="w-full bg-black/20 rounded-md py-2 px-3 border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-500 transition">
+                        <button id="search-btn" class="control-btn font-semibold py-2 px-4 rounded-md">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -208,14 +208,14 @@
     <!-- Performance Modal -->
     <div id="performance-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
         <div class="glass-card max-w-4xl w-full m-4 p-6 rounded-2xl">
-             <div class="flex justify-between items-center mb-4">
-                 <h3 class="text-2xl font-bold text-white"><i class="fas fa-chart-line mr-2 text-blue-300"></i>Consulta de Desempenho</h3>
-                 <button id="close-performance-btn" class="text-gray-300 hover:text-white text-2xl">&times;</button>
-             </div>
-             <div id="performance-period" class="text-center text-purple-300 mb-4"></div>
-             <div id="performance-list-container" class="max-h-[60vh] overflow-y-auto pr-2">
-                 <!-- JS will populate this list -->
-             </div>
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold text-white"><i class="fas fa-chart-line mr-2 text-blue-300"></i>Consulta de Desempenho</h3>
+                <button id="close-performance-btn" class="text-gray-300 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div id="performance-period" class="text-center text-purple-300 mb-4"></div>
+            <div id="performance-list-container" class="max-h-[60vh] overflow-y-auto pr-2">
+                <!-- JS will populate this list -->
+            </div>
         </div>
     </div>
 
@@ -223,15 +223,15 @@
     <!-- Warnings Modal -->
     <div id="warnings-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
         <div class="glass-card max-w-2xl w-full m-4 p-6 rounded-2xl">
-             <div class="flex justify-between items-center mb-4">
-                 <h3 class="text-2xl font-bold text-white"><i class="fas fa-triangle-exclamation mr-2 text-yellow-300"></i>Painel de Advertências</h3>
-                 <button id="close-warnings-btn" class="text-gray-300 hover:text-white text-2xl">&times;</button>
-             </div>
-             <div id="warnings-list-container" class="max-h-[60vh] overflow-y-auto pr-2">
-                 <ul id="warnings-list" class="space-y-3">
-                     <!-- JS will populate this list -->
-                 </ul>
-             </div>
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold text-white"><i class="fas fa-triangle-exclamation mr-2 text-yellow-300"></i>Painel de Advertências</h3>
+                <button id="close-warnings-btn" class="text-gray-300 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div id="warnings-list-container" class="max-h-[60vh] overflow-y-auto pr-2">
+                <ul id="warnings-list" class="space-y-3">
+                    <!-- JS will populate this list -->
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -418,15 +418,15 @@
                         }
                     });
                 } else if (rangeData.range.includes('!N')) {
-                     rows.forEach(([nick, , justifDate]) => {
-                         const trimmedNick = nick ? nick.trim() : '';
-                         const trimmedJustifDate = justifDate ? justifDate.trim() : '';
+                    rows.forEach(([nick, , justifDate]) => {
+                        const trimmedNick = nick ? nick.trim() : '';
+                        const trimmedJustifDate = justifDate ? justifDate.trim() : '';
 
-                         if (trimmedNick && trimmedJustifDate) {
-                             const key = `${trimmedJustifDate}-${trimmedNick.toLowerCase()}`;
-                             if(!justificativas.has(key)) justificativas.set(key, true);
-                         }
-                     });
+                        if (trimmedNick && trimmedJustifDate) {
+                            const key = `${trimmedJustifDate}-${trimmedNick.toLowerCase()}`;
+                            if(!justificativas.has(key)) justificativas.set(key, true);
+                        }
+                    });
                 }
             });
             return { fiscalizacoes, postagens, justificativas };
@@ -512,13 +512,13 @@
                     
                     postDates.forEach((date, index) => {
                         if (date === todayStr) {
-                             hasAnyResponsibility = true;
-                             const fiscDate = row[index === 0 ? 3 : 4]; 
-                             const isCompleted = activityMaps.fiscalizacoes.has(fiscDate) && activityMaps.fiscalizacoes.get(fiscDate).includes(memberName.toLowerCase());
-                             
-                             if (!todaysPosters.some(p => p.name === memberName)) {
-                                 todaysPosters.push({ name: memberName, completed: isCompleted });
-                             }
+                            hasAnyResponsibility = true;
+                            const fiscDate = row[index === 0 ? 3 : 4]; 
+                            const isCompleted = activityMaps.fiscalizacoes.has(fiscDate) && activityMaps.fiscalizacoes.get(fiscDate).includes(memberName.toLowerCase());
+                            
+                            if (!todaysPosters.some(p => p.name === memberName)) {
+                                todaysPosters.push({ name: memberName, completed: isCompleted });
+                            }
                         }
                     });
                 });
@@ -539,10 +539,10 @@
             });
         
             if (!hasAnyResponsibility) {
-                 const listItem = document.createElement('li');
-                 listItem.className = 'text-gray-400 text-center';
-                 listItem.textContent = 'Nenhuma postagem agendada para hoje.';
-                 list.appendChild(listItem);
+                const listItem = document.createElement('li');
+                listItem.className = 'text-gray-400 text-center';
+                listItem.textContent = 'Nenhuma postagem agendada para hoje.';
+                list.appendChild(listItem);
             }
             
             container.classList.remove('hidden');
@@ -601,7 +601,7 @@
                     </li>
                 `).join('');
             } else {
-                 list.innerHTML = `<li class="text-green-400 text-center p-4">Nenhuma advertência pendente. Todos em dia!</li>`;
+                list.innerHTML = `<li class="text-green-400 text-center p-4">Nenhuma advertência pendente. Todos em dia!</li>`;
             }
         }
         
@@ -681,7 +681,7 @@
                         status = 'CASO ESPECIAL';
                         motivo = 'JUSTIFICOU';
                         if (justifiedCount === 2) {
-                             motivo += ' <i class="fas fa-triangle-exclamation text-yellow-300 ml-1" title="Justificou as duas tarefas"></i>';
+                            motivo += ' <i class="fas fa-triangle-exclamation text-yellow-300 ml-1" title="Justificou as duas tarefas"></i>';
                         }
                     } else if (doneCount === 2) {
                         status = 'REGULAR';
@@ -730,7 +730,7 @@
         function renderControls() {
             teamButtonsContainer.innerHTML = `<button class="control-btn active font-semibold py-2 px-4 rounded-md" data-team-id="all">Todas</button>`;
             processedSchedule.forEach(team => {
-                 teamButtonsContainer.innerHTML += `<button class="control-btn font-semibold py-2 px-4 rounded-md" data-team-id="${team.id}">${team.name}</button>`;
+                teamButtonsContainer.innerHTML += `<button class="control-btn font-semibold py-2 px-4 rounded-md" data-team-id="${team.id}">${team.name}</button>`;
             });
         }
 
@@ -751,8 +751,8 @@
                 : processedSchedule.filter(t => t.id === teamIdFilter);
 
             if (teamsToDisplay.length === 0 && highlightedNick) {
-                 messageContainer.innerHTML = `<div class="glass-card text-yellow-300 text-center p-4"><p>Nenhum membro encontrado com o nick "${highlightedNick}".</p></div>`;
-                 return;
+                messageContainer.innerHTML = `<div class="glass-card text-yellow-300 text-center p-4"><p>Nenhum membro encontrado com o nick "${highlightedNick}".</p></div>`;
+                return;
             }
 
             teamsToDisplay.forEach(teamData => {
@@ -760,7 +760,7 @@
 
                 if (isOmegaEmpty) {
                     if (teamIdFilter === 'all' || teamIdFilter === teamData.id) {
-                         const omegaMessage = document.createElement('div');
+                        const omegaMessage = document.createElement('div');
                         omegaMessage.className = 'glass-card text-white p-6 text-center';
                         omegaMessage.innerHTML = `<h3 class="text-3xl font-bold text-center text-cyan-400 mb-2 drop-shadow-md">${teamData.name}</h3><p class="text-cyan-200">A Equipe Ômega não possui escala para esta semana.</p>`;
                         scheduleContainer.appendChild(omegaMessage);
@@ -814,19 +814,24 @@
                 <h3 class="text-3xl font-bold text-center text-white mb-2 drop-shadow-md">${teamData.name}</h3>
                 <p class="text-center text-purple-300 mb-6"><strong>Perito Responsável:</strong> ${teamData.peritoResponsavel}</p>
                 <div class="bg-black/20 p-4 rounded-xl">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center mb-4 p-2 bg-black/20 rounded-lg items-center">
-                        <div class="font-bold text-lg">${teamData.tituloFiscalizacao}</div>
-                        <div class="font-bold text-lg">${teamData.tituloPostagem}</div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="text-purple-300">
+                                <tr class="bg-black/40 text-sm">
+                                    <th rowspan="2" class="py-3 px-4 text-left align-middle border-r border-b border-white/10 font-semibold">${tableHeaders[0] || 'ANALISTAS'}</th>
+                                    <th colspan="2" class="py-2 px-4 text-center border-r border-b border-white/10 font-semibold">${teamData.tituloFiscalizacao}</th>
+                                    <th colspan="2" class="py-2 px-4 text-center border-b border-white/10 font-semibold">${teamData.tituloPostagem}</th>
+                                </tr>
+                                <tr class="bg-black/30">
+                                    <th class="py-2 px-4 font-normal text-xs border-r border-white/10">${tableHeaders[3] || 'Fisc. 1'}</th>
+                                    <th class="py-2 px-4 font-normal text-xs border-r border-white/10">${tableHeaders[4] || 'Fisc. 2'}</th>
+                                    <th class="py-2 px-4 font-normal text-xs border-r border-white/10">${tableHeaders[6] || 'Post. 1'}</th>
+                                    <th class="py-2 px-4 font-normal text-xs">${tableHeaders[7] || 'Post. 2'}</th>
+                                </tr>
+                            </thead>
+                            <tbody>${tableRowsHTML}</tbody>
+                        </table>
                     </div>
-                    <div class="overflow-x-auto"><table class="min-w-full text-sm">
-                        <thead class="bg-black/30"><tr>
-                            <th class="py-2 px-4 text-left border-r border-white/10">${tableHeaders[0] || 'Membro'}</th>
-                            <th class="py-2 px-4 border-r border-white/10">${tableHeaders[3] || 'Fisc. 1'}</th>
-                            <th class="py-2 px-4 border-r border-white/10">${tableHeaders[4] || 'Fisc. 2'}</th>
-                            <th class="py-2 px-4 border-r border-white/10">${tableHeaders[6] || 'Post. 1'}</th>
-                            <th class="py-2 px-4">${tableHeaders[7] || 'Post. 2'}</th>
-                        </tr></thead><tbody>${tableRowsHTML}</tbody>
-                    </table></div>
                 </div>
                 <div class="text-right text-xs text-purple-300 mt-4 pr-2"><strong>Período de Referência:</strong> ${periodoRef}</div>
             `;
