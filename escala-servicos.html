@@ -66,9 +66,16 @@
             border-radius: 4px;
         }
         .status-feito { background-color: rgba(34, 197, 94, 0.5); }
-        .status-hoje { background-color: rgba(250, 204, 21, 0.5); }
+        .status-hoje, .status-alerta { background-color: rgba(250, 204, 21, 0.5); }
         .status-justificado { background-color: rgba(59, 130, 246, 0.5); }
         .status-pendente { background-color: rgba(239, 68, 68, 0.5); }
+        
+        .timer {
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #f3e5f5;
+            margin-left: 8px;
+        }
 
         .control-btn {
             transition: all 0.3s ease;
@@ -137,12 +144,13 @@
             </div>
         </div>
 
-        <div id="legend" class="glass-card p-4 mb-8 max-w-2xl mx-auto hidden">
+        <div id="legend" class="glass-card p-4 mb-8 max-w-3xl mx-auto hidden">
             <h3 class="text-lg font-semibold text-center mb-3">Legenda de Cores</h3>
-            <ul class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 text-sm text-center">
+            <ul class="grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-2 text-sm text-center">
                 <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-feito"></span> Feito</li>
                 <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-hoje"></span> Hoje</li>
                 <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-pendente"></span> Pendente</li>
+                 <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-alerta"></span> Alerta</li>
                 <li class="flex items-center justify-center gap-2"><span class="h-4 w-4 rounded-full status-justificado"></span> Justificado</li>
             </ul>
         </div>
@@ -238,7 +246,6 @@
         const REPORTS_SPREADSHEET_ID = '18iZ8Dm4rCQL2y5Rurqpb61zh3RZpUApBArjNrrHufOY';
         const MEMBERS_SPREADSHEET_ID = '1kFnRqlQ-8Bzlv578t9uC_T0C74jjsK3nbzBgRFTlAJM';
 
-        // Configuration for each team, including special ranges for Beta team's experts
         const TEAMS = [
             { name: '[SPP] Equipe Alpha', reportTab: 'Equipe Alpha', range: 'C13:J17' },
             { name: '[SPP] Equipe Beta', reportTab: 'Equipe Beta', range: 'C13:J17', extraRanges: ['L14:N17'] },
@@ -249,6 +256,8 @@
         let processedSchedule = [];
         let activityMaps = {};
         let memberInfoMap = new Map();
+        let countdownTimers = [];
+        let timerInterval;
 
         const loadingEl = document.getElementById('loading');
         const legendEl = document.getElementById('legend');
@@ -261,11 +270,9 @@
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Parses date strings from the spreadsheet into Date objects
         function parseDate(dateStr) {
             if (!dateStr || typeof dateStr !== 'string') return null;
             
-            // Format: DD/MM/YYYY
             if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
                 const [day, month, year] = dateStr.split('/');
                 const date = new Date(year, month - 1, day);
@@ -273,7 +280,6 @@
                 return date;
             }
             
-            // Format: "DD de Mês. de YYYY"
             const monthMap = { 'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3, 'mai': 4, 'jun': 5, 'jul': 6, 'ago': 7, 'set': 8, 'out': 9, 'nov': 10, 'dez': 11 };
             const cleanedStr = dateStr.replace('.', '').replace(' de', '').toLowerCase();
             const parts = cleanedStr.split(' ');
@@ -285,7 +291,6 @@
             return date;
         }
 
-        // Main function to orchestrate fetching and rendering of all data
         async function fetchAllData() {
             try {
                 if (API_KEY === 'YOUR_API_KEY') {
@@ -318,7 +323,6 @@
             }
         }
         
-        // Fetches all necessary ranges from the schedule spreadsheet
         async function fetchScheduleData() {
             const ranges = TEAMS.flatMap(t => {
                 const teamRanges = [
@@ -328,7 +332,6 @@
                     `'${t.name}'!F20:G20`,
                     `'${t.name}'!${t.range}`
                 ];
-                // If a team has extra ranges defined (like Beta), add them to the fetch list
                 if (t.extraRanges) {
                     teamRanges.push(...t.extraRanges.map(r => `'${t.name}'!${r}`));
                 }
@@ -340,7 +343,6 @@
             return response.json();
         }
 
-        // Fetches data from the reports spreadsheet to check task completion
         async function fetchReportData() {
             const reportTeams = TEAMS.filter(t => t.reportTab);
             const ranges = reportTeams.flatMap(t => [`'${t.reportTab}'!C14:F400`, `'${t.reportTab}'!N14:P400`]);
@@ -350,7 +352,6 @@
             return response.json();
         }
         
-        // Fetches data about all members for the performance modal
         async function fetchMemberData() {
             const range = 'Gerador!B16:I37';
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${MEMBERS_SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
@@ -359,36 +360,36 @@
             return response.json();
         }
 
-        // Processes the raw schedule data from the API response
         function processScheduleData(data) {
             let rangeCursor = 0;
             return TEAMS.map(team => {
                 const peritoRaw = data.valueRanges[rangeCursor]?.values?.[0]?.[0] || 'N/A';
+                const peritoResponsavel = peritoRaw.replace(/Perito Responsável:\s*/i, '').trim();
+
                 const teamObject = {
                     id: team.name,
                     name: team.name.replace('[SPP] ', ''),
                     isOmega: team.name.includes('Ômega'),
-                    peritoResponsavel: peritoRaw.replace(/Perito Responsável:\s*/i, '').trim(),
+                    peritoResponsavel: peritoResponsavel.split(/ e | & /).map(p => p.trim()),
                     periodoReferencia: data.valueRanges[rangeCursor + 3]?.values?.[0] || [],
                     tableData: data.valueRanges[rangeCursor + 4]?.values || [],
                 };
-                rangeCursor += 5; // Move past the 5 standard ranges
+                rangeCursor += 5;
 
-                // If the team has extra data (like Beta's experts), process it
                 if (team.extraRanges) {
                     const peritoTaskData = data.valueRanges[rangeCursor]?.values || [];
                     teamObject.peritoTasks = peritoTaskData.map(row => ({
                         nick: row[0] || null,
                         fisc1: row[1] || '-',
                         fisc2: row[2] || '-'
-                    })).filter(p => p.nick); // Keep only rows that have a perito nick
-                    rangeCursor += team.extraRanges.length; // Move cursor past the extra ranges
+                    })).filter(p => p.nick);
+                    rangeCursor += team.extraRanges.length;
                 }
                 return teamObject;
             });
         }
 
-        // Processes report data to create maps of completed tasks and justifications
+
         function processReportData(data) {
             const fiscalizacoes = new Map(); 
             const postagens = new Map(); 
@@ -447,10 +448,9 @@
             return map;
         }
         
-        // Determines the status (and CSS class) of a standard task cell
         function getStatus(assignedNick, dateStr, deadlineOverrideDateStr = null) {
             if (assignedNick.toLowerCase() === 'perito') {
-                return { class: '', tooltip: 'Atividade do Perito' };
+                 return { class: '', tooltip: 'Atividade do Perito' };
             }
             if (!dateStr || dateStr === '-') return { class: '', tooltip: '' };
 
@@ -462,19 +462,16 @@
             
             const nickLower = assignedNick.toLowerCase();
             
-            // Check if task is done
             if (activityMaps.fiscalizacoes.has(dateStr) && activityMaps.fiscalizacoes.get(dateStr).includes(nickLower)) {
                 return { class: 'status-feito', tooltip: `Concluído por ${assignedNick}` };
             }
             
-            // Check for justification
             const fiscJustificationKey = `${dateStr}-${nickLower}`;
             const postJustificationKey = deadlineOverrideDateStr ? `${deadlineOverrideDateStr}-${nickLower}` : null;
             if (activityMaps.justificativas.has(fiscJustificationKey) || (postJustificationKey && activityMaps.justificativas.has(postJustificationKey))) {
                 return { class: 'status-justificado', tooltip: `Justificado por ${assignedNick} para a tarefa de ${dateStr}` };
             }
             
-            // Check deadline status
             if (deadlineDate.getTime() === today.getTime()) {
                 return { class: 'status-hoje', tooltip: `Prazo final hoje (${deadlineOverrideDateStr || dateStr})` };
             }
@@ -486,33 +483,66 @@
             return { class: '', tooltip: `Prazo: ${deadlineOverrideDateStr || dateStr}` };
         }
         
-        // ** NEW ** Determines the status for the "Peritos da Semana" table
-        function getPeritoStatus(assignedNick, dateStr) {
-            if (!dateStr || dateStr === '-') return { class: '', tooltip: '' };
+        function getPeritoTaskStatus(peritoNick, dateAnalisada, teamData) {
+            if (!dateAnalisada || dateAnalisada === '-') return { class: '', tooltip: '' };
 
-            const deadlineDate = parseDate(dateStr);
-            if (!deadlineDate) return { class: '', tooltip: '' };
-            
-            const nickLower = assignedNick.toLowerCase();
-            
-            // Check if task is done (GREEN)
-            if (activityMaps.fiscalizacoes.has(dateStr) && activityMaps.fiscalizacoes.get(dateStr).includes(nickLower)) {
-                return { class: 'status-feito', tooltip: `Concluído por ${assignedNick}` };
-            }
-            
-            // Check for justification (BLUE)
-            const justificationKey = `${dateStr}-${nickLower}`;
-            if (activityMaps.justificativas.has(justificationKey)) {
-                return { class: 'status-justificado', tooltip: `Justificado por ${assignedNick} para a tarefa de ${dateStr}` };
+            if (activityMaps.fiscalizacoes.has(dateAnalisada) && activityMaps.fiscalizacoes.get(dateAnalisada).includes(peritoNick.toLowerCase())) {
+                return { class: 'status-feito', tooltip: `Concluído pelo perito ${peritoNick}` };
             }
 
-            // Check if deadline is today (YELLOW)
-            if (deadlineDate.getTime() === today.getTime()) {
-                return { class: 'status-hoje', tooltip: `Prazo final hoje (${dateStr})` };
+            let originalAnalyst = null;
+            let analystDeadlineStr = null;
+            for (const row of teamData.tableData.slice(1)) {
+                const nick = row[0] || '';
+                if (!nick || nick.toLowerCase() === 'perito') continue;
+                
+                if (row[3] === dateAnalisada) {
+                    originalAnalyst = nick;
+                    analystDeadlineStr = row[6];
+                    break;
+                }
+                if (row[4] === dateAnalisada) {
+                    originalAnalyst = nick;
+                    analystDeadlineStr = row[7];
+                    break;
+                }
             }
             
-            // If past due, do not mark as pending (red). Return default (no color).
-            return { class: '', tooltip: `Prazo: ${dateStr}` };
+            if (!originalAnalyst || !analystDeadlineStr) {
+                return { class: '', tooltip: `Não foi possível encontrar o analista original para a data ${dateAnalisada}` };
+            }
+
+            const analystDidTask = activityMaps.fiscalizacoes.has(dateAnalisada) && activityMaps.fiscalizacoes.get(dateAnalisada).includes(originalAnalyst.toLowerCase());
+            if (analystDidTask) {
+                return { class: '', tooltip: `Tarefa de ${dateAnalisada} foi concluída pelo analista ${originalAnalyst}, não sendo necessária ação do perito.` };
+            }
+            
+            const analystJustified = activityMaps.justificativas.has(`${dateAnalisada}-${originalAnalyst.toLowerCase()}`) || activityMaps.justificativas.has(`${analystDeadlineStr}-${originalAnalyst.toLowerCase()}`);
+            if (analystJustified) {
+                 return { class: 'status-justificado', tooltip: `Tarefa de ${dateAnalisada} foi justificada pelo analista ${originalAnalyst}` };
+            }
+
+            const analystDeadline = parseDate(analystDeadlineStr);
+            if (!analystDeadline) return { class: '', tooltip: 'Prazo do analista inválido.' };
+            
+            const now = new Date();
+            const alertEndDate = new Date(analystDeadline.getTime());
+            alertEndDate.setDate(alertEndDate.getDate() + 3);
+            alertEndDate.setHours(0, 0, 0, 0);
+
+            if (now < alertEndDate) {
+                const timerId = `timer-${peritoNick}-${dateAnalisada}`.replace(/[^a-zA-Z0-9-]/g, '');
+                
+                 countdownTimers.push({ 
+                    elementId: timerId, 
+                    endTime: alertEndDate.getTime(),
+                    originalCellId: `cell-${peritoNick}-${dateAnalisada}`.replace(/[^a-zA-Z0-9-]/g, '')
+                 });
+
+                return { class: 'status-alerta', tooltip: `Analista ${originalAnalyst} não finalizou. Prazo para o perito agir termina em 48h.`, timerId: timerId, isAlert: true };
+            }
+
+            return { class: 'status-pendente', tooltip: `Pendente para o perito. O prazo de 48h do analista expirou.` };
         }
         
         function renderTodaysResponsibilities(schedule) {
@@ -526,7 +556,7 @@
             schedule.forEach(teamData => {
                 if (teamData.isOmega) return;
         
-                const todaysPosters = [];
+                const todaysPosters = new Map();
                 const tableRowsData = teamData.tableData.slice(1);
         
                 tableRowsData.forEach(row => {
@@ -534,7 +564,7 @@
                     if (!nick) return;
         
                     const isPeritoRow = nick.toLowerCase() === 'perito';
-                    const memberName = isPeritoRow ? teamData.peritoResponsavel : nick;
+                    const memberNames = isPeritoRow ? teamData.peritoResponsavel : [nick];
         
                     const postDates = [row[6], row[7]]; 
                     
@@ -542,31 +572,32 @@
                         if (date === todayStr) {
                             hasAnyResponsibility = true;
                             const fiscDate = row[index === 0 ? 3 : 4]; 
-                            const isCompleted = activityMaps.fiscalizacoes.has(fiscDate) && activityMaps.fiscalizacoes.get(fiscDate).includes(memberName.toLowerCase());
                             
-                            if (!todaysPosters.some(p => p.name === memberName)) {
-                                todaysPosters.push({ name: memberName, completed: isCompleted });
-                            }
+                            memberNames.forEach(memberName => {
+                                const isCompleted = activityMaps.fiscalizacoes.has(fiscDate) && activityMaps.fiscalizacoes.get(fiscDate).includes(memberName.toLowerCase());
+                                if (!todaysPosters.has(memberName)) {
+                                     todaysPosters.set(memberName, { name: memberName, team: teamData.name, tasks: [] });
+                                }
+                                todaysPosters.get(memberName).tasks.push({fiscDate, isCompleted});
+                            });
                         }
                     });
                 });
         
-                if (todaysPosters.length > 0) {
-                    const membersHTML = todaysPosters.map(poster => {
-                        const icon = poster.completed 
-                            ? `<i class="fas fa-check-circle text-green-400 ml-2" title="Concluído"></i>` 
-                            : '';
-                        return `${poster.name}${icon}`;
-                    }).join(', ');
+                todaysPosters.forEach((poster, name) => {
+                    const allTasksCompleted = poster.tasks.every(t => t.isCompleted);
+                    const icon = allTasksCompleted 
+                        ? `<i class="fas fa-check-circle text-green-400 ml-2" title="Concluído"></i>` 
+                        : '';
                     
                     const listItem = document.createElement('li');
                     listItem.className = 'text-white';
-                    listItem.innerHTML = `<strong class="text-purple-300">${teamData.name}:</strong> ${membersHTML}`;
+                    listItem.innerHTML = `<strong class="text-purple-300">${poster.team}:</strong> ${poster.name}${icon}`;
                     list.appendChild(listItem);
-                }
+                });
             });
         
-            if (!hasAnyResponsibility) {
+            if (list.children.length === 0) {
                 const listItem = document.createElement('li');
                 listItem.className = 'text-gray-400 text-center col-span-full';
                 listItem.textContent = 'Nenhuma postagem agendada para hoje.';
@@ -589,30 +620,32 @@
                     if (!nick) return;
 
                     const isPeritoRow = nick.toLowerCase() === 'perito';
-                    const memberName = isPeritoRow ? teamData.peritoResponsavel : nick;
+                    const memberNames = isPeritoRow ? teamData.peritoResponsavel : [nick];
 
                     const tasks = [
                         { fiscDate: row[3], postDate: row[6] },
                         { fiscDate: row[4], postDate: row[7] }
                     ];
 
-                    tasks.forEach(task => {
-                        const deadline = parseDate(task.postDate);
-                        if (deadline && deadline < today) {
-                            const isDoneBySelf = activityMaps.fiscalizacoes.has(task.fiscDate) && activityMaps.fiscalizacoes.get(task.fiscDate).includes(memberName.toLowerCase());
-                            const fiscJustificationKey = `${task.fiscDate}-${memberName.toLowerCase()}`;
-                            const postJustificationKey = task.postDate ? `${task.postDate}-${memberName.toLowerCase()}` : null;
-                            const isJustified = activityMaps.justificativas.has(fiscJustificationKey) || (postJustificationKey && activityMaps.justificativas.has(postJustificationKey));
-                            
-                            if (!isDoneBySelf && !isJustified) {
-                                warnings.push({
-                                    nick: memberName,
-                                    team: teamData.name,
-                                    fiscDate: task.fiscDate,
-                                    postDate: task.postDate
-                                });
+                    memberNames.forEach(memberName => {
+                        tasks.forEach(task => {
+                            const deadline = parseDate(task.postDate);
+                            if (deadline && deadline < today) {
+                                const isDoneBySelf = activityMaps.fiscalizacoes.has(task.fiscDate) && activityMaps.fiscalizacoes.get(task.fiscDate).includes(memberName.toLowerCase());
+                                const fiscJustificationKey = `${task.fiscDate}-${memberName.toLowerCase()}`;
+                                const postJustificationKey = task.postDate ? `${task.postDate}-${memberName.toLowerCase()}` : null;
+                                const isJustified = activityMaps.justificativas.has(fiscJustificationKey) || (postJustificationKey && activityMaps.justificativas.has(postJustificationKey));
+                                
+                                if (!isDoneBySelf && !isJustified) {
+                                    warnings.push({
+                                        nick: memberName,
+                                        team: teamData.name,
+                                        fiscDate: task.fiscDate,
+                                        postDate: task.postDate
+                                    });
+                                }
                             }
-                        }
+                        });
                     });
                 });
             });
@@ -643,7 +676,7 @@
             const startDate = firstTeam ? parseDate(firstTeam.periodoReferencia[0]) : null;
             const endDate = firstTeam ? parseDate(firstTeam.periodoReferencia[1]) : null;
             
-            const peritoNicks = new Set(schedule.map(t => t.peritoResponsavel.toLowerCase()));
+            const peritoNicks = new Set(schedule.flatMap(t => t.peritoResponsavel.map(p => p.toLowerCase())));
 
             if (firstTeam && startDate && endDate) {
                 periodEl.innerHTML = `<strong>Período de Referência:</strong> ${firstTeam.periodoReferencia[0]} a ${firstTeam.periodoReferencia[1]}`;
@@ -766,13 +799,39 @@
                 teamButtonsContainer.innerHTML += `<button class="control-btn font-semibold py-2 px-4 rounded-md" data-team-id="${team.id}">${team.name}</button>`;
             });
         }
+        
+        function updateTimers() {
+             countdownTimers.forEach(timerInfo => {
+                const timerElement = document.getElementById(timerInfo.elementId);
+                const cellElement = document.getElementById(timerInfo.originalCellId);
+                if (!timerElement || !cellElement) return;
 
-        // Main function to render schedules based on filters
+                const now = new Date().getTime();
+                const distance = timerInfo.endTime - now;
+                
+                if (distance < 0) {
+                    timerElement.innerHTML = "Expirado";
+                    cellElement.classList.remove('status-alerta');
+                    cellElement.classList.add('status-pendente');
+                    return;
+                }
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                timerElement.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+            });
+        }
+
         function displaySchedules(teamIdFilter, highlightedNick = null) {
             scheduleContainer.innerHTML = '';
             messageContainer.innerHTML = '';
+            countdownTimers = []; 
             
-            // Update active button state
+            if(timerInterval) clearInterval(timerInterval);
+            
             document.querySelectorAll('#team-buttons .control-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.teamId === teamIdFilter);
             });
@@ -807,9 +866,12 @@
                     scheduleContainer.appendChild(teamElement);
                 }
             });
+            
+            if(countdownTimers.length > 0) {
+                 timerInterval = setInterval(updateTimers, 1000);
+            }
         }
 
-        // Renders the HTML for a standard team schedule table
         function renderTeamSchedule(teamData, highlightedNick = null) {
             const teamElement = document.createElement('div');
             teamElement.className = 'glass-card text-white p-4 sm:p-6';
@@ -817,24 +879,25 @@
             const tableHeaders = teamData.tableData[0] || [];
             const tableRowsData = teamData.tableData.slice(1);
             
-            // Generate HTML for the main analyst table rows
             let tableRowsHTML = tableRowsData.map(row => {
                 const nick = row[0] || ''; if (!nick) return '';
                 
                 const isPeritoRow = nick.toLowerCase() === 'perito';
-                const effectiveNick = isPeritoRow ? teamData.peritoResponsavel : nick;
-                const isHighlighted = highlightedNick && (
-                    (!isPeritoRow && nick.toLowerCase().includes(highlightedNick.toLowerCase())) ||
-                    (isPeritoRow && teamData.peritoResponsavel.toLowerCase().includes(highlightedNick.toLowerCase()))
-                );
+                const effectiveNicks = isPeritoRow ? teamData.peritoResponsavel : [nick];
+                let isHighlighted = false;
+                if(highlightedNick){
+                     isHighlighted = effectiveNicks.some(en => en.toLowerCase().includes(highlightedNick.toLowerCase())) ||
+                                     (isPeritoRow && teamData.peritoResponsavel.some(p => p.toLowerCase().includes(highlightedNick.toLowerCase())));
+                }
 
                 const fisc1_data = row[3] || '-';
                 const fisc1_post = row[6] || '-';
                 const fisc2_data = row[4] || '-';
                 const fisc2_post = row[7] || '-';
 
-                const status1 = getStatus(effectiveNick, fisc1_data, fisc1_post);
-                const status2 = getStatus(effectiveNick, fisc2_data, fisc2_post);
+                const representativeNick = effectiveNicks[0];
+                const status1 = getStatus(representativeNick, fisc1_data, fisc1_post);
+                const status2 = getStatus(representativeNick, fisc2_data, fisc2_post);
                 
                 return `<tr class="border-b border-white/10 ${isPeritoRow ? 'perito-row' : ''} ${isHighlighted ? 'highlight-row' : ''}">
                             <td class="py-3 px-4 font-medium text-left border-r border-white/10">${nick}</td>
@@ -847,7 +910,6 @@
             
             const periodoRef = teamData.periodoReferencia.length > 1 ? `${teamData.periodoReferencia[0]} a ${teamData.periodoReferencia[1]}` : 'N/A';
             
-            // Generate HTML for the weekly experts table (only for Beta team)
             let peritosHTML = '';
             if (teamData.id === '[SPP] Equipe Beta' && teamData.peritoTasks && teamData.peritoTasks.length > 0) {
                 const peritoRowsHTML = teamData.peritoTasks.map(perito => {
@@ -855,15 +917,27 @@
 
                     const isHighlighted = highlightedNick && perito.nick.toLowerCase().includes(highlightedNick.toLowerCase());
                     
-                    // **MODIFIED**: Use the new status function for peritos
-                    const status1 = getPeritoStatus(perito.nick, perito.fisc1);
-                    const status2 = getPeritoStatus(perito.nick, perito.fisc2);
+                    const status1 = getPeritoTaskStatus(perito.nick, perito.fisc1, teamData);
+                    const status2 = getPeritoTaskStatus(perito.nick, perito.fisc2, teamData);
+                    
+                    const cell1Id = `cell-${perito.nick}-${perito.fisc1}`.replace(/[^a-zA-Z0-9-]/g, '');
+                    const cell2Id = `cell-${perito.nick}-${perito.fisc2}`.replace(/[^a-zA-Z0-9-]/g, '');
 
                     return `<tr class="border-b border-white/10 ${isHighlighted ? 'highlight-row' : ''}">
-                        <td class="py-3 px-4 font-medium text-left">${perito.nick}</td>
-                        <td class="p-1 text-center"><span class="status-cell inline-block w-full p-2 ${status1.class}" title="${status1.tooltip}">${perito.fisc1}</span></td>
-                        <td class="p-1 text-center"><span class="status-cell inline-block w-full p-2 ${status2.class}" title="${status2.tooltip}">${perito.fisc2}</span></td>
-                    </tr>`;
+                                <td class="py-3 px-4 font-medium text-left">${perito.nick}</td>
+                                <td class="py-2 px-1 text-center border-r border-white/10">
+                                    <div id="${cell1Id}" class="status-cell ${status1.class} rounded-md px-2 py-1 flex justify-between items-center min-h-[34px]" title="${status1.tooltip}">
+                                        <span>${perito.fisc1}</span>
+                                        ${status1.isAlert ? `<span id="${status1.timerId}" class="timer"></span>` : ''}
+                                    </div>
+                                </td>
+                                <td class="py-2 px-1 text-center">
+                                    <div id="${cell2Id}" class="status-cell ${status2.class} rounded-md px-2 py-1 flex justify-between items-center min-h-[34px]" title="${status2.tooltip}">
+                                        <span>${perito.fisc2}</span>
+                                        ${status2.isAlert ? `<span id="${status2.timerId}" class="timer"></span>` : ''}
+                                    </div>
+                                </td>
+                            </tr>`;
                 }).join('');
 
                 peritosHTML = `
@@ -875,7 +949,7 @@
                                     <thead class="text-purple-300">
                                         <tr class="bg-black/40 text-sm">
                                             <th class="py-2 px-4 text-left font-semibold uppercase">Perito</th>
-                                            <th class="py-2 px-4 text-center font-semibold uppercase">1ª Fisc. (Data Analisada)</th>
+                                            <th class="py-2 px-4 text-center font-semibold uppercase border-r border-white/10">1ª Fisc. (Data Analisada)</th>
                                             <th class="py-2 px-4 text-center font-semibold uppercase">2ª Fisc. (Data Analisada)</th>
                                         </tr>
                                     </thead>
@@ -887,10 +961,9 @@
                 `;
             }
             
-            // Assemble the final HTML for the team element
             teamElement.innerHTML = `
                 <h3 class="text-3xl font-bold text-center text-white mb-2 drop-shadow-md">${teamData.name}</h3>
-                <p class="text-center text-purple-300 mb-6"><strong>Perito Responsável:</strong> ${teamData.peritoResponsavel}</p>
+                <p class="text-center text-purple-300 mb-6"><strong>Perito Responsável:</strong> ${teamData.peritoResponsavel.join(' e ')}</p>
                 <div class="bg-black/20 p-4 rounded-xl">
                     <div class="overflow-x-auto">
                         <table class="min-w-full text-sm">
@@ -929,7 +1002,7 @@
             
             teamElement.innerHTML = `
                 <h3 class="text-3xl font-bold text-center text-cyan-400 mb-2 drop-shadow-md">${teamData.name}</h3>
-                <p class="text-center text-gray-300 mb-6"><strong>Perito Responsável:</strong> ${teamData.peritoResponsavel}</p>
+                <p class="text-center text-gray-300 mb-6"><strong>Perito Responsável:</strong> ${teamData.peritoResponsavel.join(' e ')}</p>
                 <div class="bg-black/20 p-4 rounded-xl">
                     <h4 class="font-semibold text-lg text-center mb-3">Membros da Equipe</h4>
                     <ul class="space-y-2 text-center">${nicksHTML}</ul>
@@ -954,14 +1027,13 @@
             let nickToHighlight = null;
 
             for (const team of processedSchedule) {
-                 if (team.peritoResponsavel.toLowerCase().includes(searchTerm)) {
+                 if (team.peritoResponsavel.some(p => p.toLowerCase().includes(searchTerm))) {
                     teamToShow = team.id;
-                    nickToHighlight = team.peritoResponsavel;
+                    nickToHighlight = searchTerm;
                     found = true;
                     break;
                 }
                 
-                // Also search in the weekly peritos for Beta team
                 if (team.id === '[SPP] Equipe Beta' && team.peritoTasks) {
                     const foundPerito = team.peritoTasks.find(p => p.nick && p.nick.toLowerCase().includes(searchTerm));
                     if (foundPerito) {
@@ -992,7 +1064,6 @@
             }
         }
         
-        // --- Event Listeners ---
         window.addEventListener('load', fetchAllData);
 
         teamButtonsContainer.addEventListener('click', (e) => {
