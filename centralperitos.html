@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPP - Central de Peritos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        html {
+            height: 100%;
+            background: linear-gradient(135deg, #1c052e, #2a0845, #1d0638);
+            background-size: 300% 300%;
+            background-attachment: fixed;
+            animation: purpleGradient 12s ease-in-out infinite;
+        }
+
+        @keyframes purpleGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        body {
+            background: transparent;
+            color: #f3e5f5;
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: rgba(20, 2, 40, 0.45);
+            backdrop-filter: blur(12px) saturate(150%);
+            -webkit-backdrop-filter: blur(12px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .control-btn {
+            transition: all 0.3s ease;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .control-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        .control-btn.active {
+            background-color: #a855f7;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.7);
+        }
+        
+        select {
+             -webkit-appearance: none;
+             -moz-appearance: none;
+             appearance: none;
+             background: rgba(0,0,0,0.2) url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23c0c0c0%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E') no-repeat right 1rem center/12px;
+             border: 1px solid rgba(255, 255, 255, 0.2);
+             color: white;
+        }
+        select option {
+            background-color: #2a0845;
+            color: white;
+        }
+
+        .timer-cell { font-weight: bold; color: #facc15; }
+        
+        .expired-row { background-color: rgba(127, 29, 29, 0.5) !important; color: #fecaca; }
+        .expired-row .timer-cell { color: #fca5a5; font-weight: 700; }
+        .pending-row { background-color: rgba(139, 92, 246, 0.1); }
+        
+        .table-section-header {
+            font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; padding-bottom: 0.5rem;
+            border-bottom: 2px solid #a855f7; color: white; display: flex; align-items: center; gap: 0.75rem;
+        }
+        
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+        details .summary-icon { transition: transform 0.3s; }
+        details[open] .summary-icon { transform: rotate(90deg); }
+
+        .status-feito { background-color: rgba(34, 197, 94, 0.5); }
+        .status-alerta { background-color: rgba(250, 204, 21, 0.5); }
+        .status-pendente { background-color: rgba(239, 68, 68, 0.5); }
+        .timer { font-size: 0.7rem; font-weight: bold; color: #f3e5f5; margin-left: 8px; }
+
+        /* Column borders */
+        th, td {
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 0.75rem;
+        }
+        th:last-child, td:last-child {
+            border-right: none;
+        }
+        .case-number-col {
+            background-color: rgba(0,0,0,0.2);
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="text-white">
+    <header class="glass-card sticky top-0 z-50 m-4">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center">
+                    <i class="fas fa-user-shield text-3xl text-purple-400 mr-3"></i>
+                    <h1 class="text-xl md:text-2xl font-bold text-white">Central de Peritos</h1>
+                </div>
+                <nav>
+                    <a class='text-gray-200 hover:text-white font-semibold px-3 py-2' href='/'>Voltar à Escala</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 py-12">
+        <details id="infractions-board-container" class="glass-card mb-8">
+            <summary class="p-4 cursor-pointer flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-white drop-shadow-lg flex items-center gap-3"><i class="fas fa-book"></i>Quadro de Infrações</h2>
+                <i class="fas fa-chevron-right summary-icon"></i>
+            </summary>
+            <div id="infractions-board" class="p-4 border-t border-white/20"></div>
+        </details>
+
+        <h2 class="text-4xl font-bold text-white mb-8 text-center drop-shadow-lg">Painel de Ocorrências</h2>
+
+        <div id="controls-container" class="glass-card p-4 mb-8 max-w-5xl mx-auto">
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-grow">
+                    <label class="block text-sm font-semibold mb-2 text-purple-300">Filtrar por equipe:</label>
+                    <div id="team-buttons" class="flex flex-wrap gap-2"></div>
+                </div>
+                 <div class="flex-grow md:max-w-xs">
+                    <label for="week-selector" class="block text-sm font-semibold mb-2 text-purple-300">Período de Referência:</label>
+                    <select id="week-selector" class="w-full p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 transition"></select>
+                </div>
+            </div>
+        </div>
+        
+        <div id="loading" class="text-center py-10">
+            <i class="fas fa-spinner fa-spin text-4xl text-white"></i>
+            <p class="mt-2 text-white/80">Carregando e processando ocorrências...</p>
+        </div>
+        
+        <div id="message-container" class="text-center py-10"></div>
+        <div id="inquiries-container" class="space-y-12"></div>
+        
+        <div class="mt-16">
+             <h2 class="text-4xl font-bold text-white mb-8 text-center drop-shadow-lg">Tarefas da Escala Pendentes</h2>
+             <div id="pending-schedule-tasks-container" class="space-y-8"></div>
+        </div>
+
+    </main>
+
+    <footer class="glass-card mt-12 mx-4 mb-4">
+        <div class="container mx-auto px-6 py-4 text-center text-white/70 text-sm">
+            <p class="mb-1">&copy; 2025 Serviço de Proteção dos Professores. Todos os direitos reservados.</p>
+            <p>Desenvolvido por <strong class="text-white/90">Pegas</strong> e idealizado por <strong class="text-white/90">Sr.Gabriel</strong>.</p>
+        </div>
+    </footer>
+
+    <script>
+        const API_KEY = 'AIzaSyBQhWdy4iyFCk9Lh89x8weSIyl0knXgA34';
+        const SCHEDULE_SPREADSHEET_ID = '19u9h0OnF_BlD5w8rTE9zaksh3ImMemXFQm1oob_A1Eo';
+        const REPORTS_SPREADSHEET_ID = '18iZ8Dm4rCQL2y5Rurqpb61zh3RZpUApBArjNrrHufOY';
+        const RETIFICATION_SPREADSHEET_ID = '1-JinKLWlxa2nVRTJ-QIrQsYa4lkxX57NBWzrs1U-0kQ';
+
+        const TEAMS_SCHEDULE = [
+            { name: '[SPP] Equipe Alpha', reportTab: 'Equipe Alpha', range: 'C13:J17' },
+            { name: '[SPP] Equipe Beta', reportTab: 'Equipe Beta', range: 'C13:J17', extraRanges: ['L14:N17'] },
+            { name: '[SPP] Equipe Delta', reportTab: 'Equipe Delta', range: 'C13:J17' },
+            { name: '[SPP] Equipe Ômega', reportTab: null, range: 'C14:C16' }
+        ];
+
+        const TEAMS_REPORTS = ['Equipe Alpha', 'Equipe Beta', 'Equipe Delta'];
+        
+        let countdownTimers = [];
+        let timerInterval;
+
+        const loadingEl = document.getElementById('loading');
+        const inquiriesContainer = document.getElementById('inquiries-container');
+        const pendingScheduleContainer = document.getElementById('pending-schedule-tasks-container');
+        const messageContainer = document.getElementById('message-container');
+        const teamButtonsContainer = document.getElementById('team-buttons');
+        const weekSelector = document.getElementById('week-selector');
+        
+        const now = new Date();
+
+        // --- DATA FETCHING & PROCESSING ---
+        function parseDateTime(dateTimeStr) {
+            if (!dateTimeStr || typeof dateTimeStr !== 'string') return null;
+            const parts = dateTimeStr.match(/(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})/);
+            if (!parts) return null;
+            return new Date(parts[3], parts[2] - 1, parts[1], parts[4], parts[5], parts[6]);
+        }
+        
+        function parseDate(dateStr) {
+            if (!dateStr || typeof dateStr !== 'string') return null;
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+                const [day, month, year] = dateStr.split('/');
+                const date = new Date(year, month - 1, day);
+                date.setHours(0,0,0,0);
+                return date;
+            }
+            return null;
+        }
+
+        async function fetchAllData(selectedPeriod) {
+            loadingEl.style.display = 'block';
+            inquiriesContainer.innerHTML = '';
+            try {
+                 if (API_KEY === 'YOUR_API_KEY') {
+                     throw new Error('API_KEY não foi configurada.');
+                 }
+                const [inquiriesData, scheduleData, reportStatusData, rectificationData, infractionActionData] = await Promise.all([
+                    fetchInquiriesData(),
+                    fetchScheduleData(),
+                    fetchReportStatusData(),
+                    fetchRectificationData(),
+                    fetchInfractionActions()
+                ]);
+
+                const activityMaps = processReportStatusData(reportStatusData);
+                const { processedSchedule, allPeritosSet } = processScheduleData(scheduleData);
+                const rectificationMap = processRectificationData(rectificationData, allPeritosSet);
+                const { infractionActionMap, infractionsBoardData } = processInfractionActions(infractionActionData);
+                
+                renderInfractionsBoard(infractionsBoardData);
+                
+                const allInquiries = processInquiriesData(inquiriesData, selectedPeriod, processedSchedule, rectificationMap, infractionActionMap);
+                displayInquiries('all', allInquiries);
+
+                renderPendingScheduleTasks(processedSchedule, activityMaps);
+
+            } catch (error) {
+                console.error('Erro fatal ao carregar dados:', error);
+                messageContainer.innerHTML = `<div class="glass-card text-red-300 text-center p-4"><p>Não foi possível carregar os dados. Tente recarregar a página.</p><p class="text-xs mt-2">${error.message}</p></div>`;
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+
+        async function fetchInquiriesData() {
+            // Fetches up to column M to get the inquiry link if it exists.
+            const ranges = TEAMS_REPORTS.map(team => `'${team}'!B14:M400`);
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${REPORTS_SPREADSHEET_ID}/values:batchGet?ranges=${ranges.join('&ranges=')}&valueRenderOption=FORMATTED_VALUE&key=${API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Falha ao buscar dados de ocorrências.');
+            return response.json();
+        }
+        
+        async function fetchScheduleData() {
+             const ranges = TEAMS_SCHEDULE.flatMap(t => {
+                 if(t.reportTab === null) return [];
+                 const teamRanges = [`'${t.name}'!C9`, `'${t.name}'!F20:G20`, `'${t.name}'!${t.range}`];
+                  if (t.extraRanges) { teamRanges.push(...t.extraRanges.map(r => `'${t.name}'!${r}`)); }
+                 return teamRanges;
+             });
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SCHEDULE_SPREADSHEET_ID}/values:batchGet?ranges=${ranges.join('&ranges=')}&key=${API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Falha ao buscar dados da escala.');
+            return response.json();
+        }
+        
+        async function fetchReportStatusData() {
+             const ranges = TEAMS_SCHEDULE.filter(t => t.reportTab).flatMap(t => [`'${t.reportTab}'!C14:F400`, `'${t.reportTab}'!N14:P400`]);
+             const url = `https://sheets.googleapis.com/v4/spreadsheets/${REPORTS_SPREADSHEET_ID}/values:batchGet?ranges=${ranges.join('&ranges=')}&key=${API_KEY}`;
+             const response = await fetch(url);
+             if (!response.ok) throw new Error('Falha ao buscar dados dos relatórios para status.');
+             return response.json();
+        }
+        
+        async function fetchRectificationData() {
+            const range = `'Retificação de Erros'!B5:E200`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${RETIFICATION_SPREADSHEET_ID}/values/${range}?valueRenderOption=FORMATTED_VALUE&key=${API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Falha ao buscar dados de retificação.');
+            return response.json();
+        }
+
+        async function fetchInfractionActions() {
+            const range = `'Quadro de infrações'!B22:H54`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${REPORTS_SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Falha ao buscar ações de infração.');
+            return response.json();
+        }
+
+
+        function processInquiriesData(data, referencePeriod, schedule, rectificationMap, infractionActionMap) {
+            let allInquiries = [];
+            const [startStr, endStr] = referencePeriod.split(' a ');
+            const startDate = parseDate(startStr);
+            const endDate = parseDate(endStr);
+
+            data.valueRanges.forEach(rangeData => {
+                const teamName = rangeData.range.split('!')[0].replace(/'/g, '');
+                const rows = rangeData.values || [];
+                rows.forEach((row, index) => {
+                    const caseNumber = row[0] || '';
+                    const dataAberturaStr = row[1]; if (!dataAberturaStr) return;
+                    const dataAbertura = parseDateTime(dataAberturaStr); if (!dataAbertura) return;
+
+                    const dataFiscalizadaStr = row[4];
+                    const dataFiscalizada = parseDate(dataFiscalizadaStr);
+                    const inqueritoStatus = row[9] || ''; const resolucaoStatus = row[10] || '';
+                    const infrator = (row[3] || '').trim(); const linha = (row[5] || '').trim();
+                    const descricao = (row[6] || '').trim();
+                    
+                    const isPending = inqueritoStatus.toLowerCase() === 'inquérito pendente' || resolucaoStatus.toLowerCase() === 'resolução pendente';
+                    const isInPeriod = startDate && endDate && dataFiscalizada && dataFiscalizada >= startDate && dataFiscalizada <= endDate;
+
+                    if (!isPending && !isInPeriod) return;
+
+                    let inqueritoDeadline = null, resolucaoDeadline = null;
+                    let isInqueritoExpired = false, isResolucaoExpired = false;
+                    
+                    if (inqueritoStatus.toLowerCase() === 'inquérito pendente') {
+                        inqueritoDeadline = new Date(dataAbertura.getTime() + 24 * 60 * 60 * 1000);
+                        if (now > inqueritoDeadline) isInqueritoExpired = true;
+                    }
+                    if (resolucaoStatus.toLowerCase() === 'resolução pendente') {
+                        resolucaoDeadline = new Date(dataAbertura.getTime() + 48 * 60 * 60 * 1000);
+                         if (now > resolucaoDeadline) isResolucaoExpired = true;
+                    }
+                    
+                    const teamSchedule = schedule.find(t => t.id.includes(teamName.replace('Equipe ','')));
+                    let responsiblePerito = teamSchedule ? teamSchedule.peritoResponsavel.join(' e ') : 'N/A';
+                    if (teamSchedule && teamSchedule.name === 'Beta' && teamSchedule.peritoTasks) {
+                         const assignedTask = teamSchedule.peritoTasks.find(p => p.fisc1 === dataFiscalizadaStr || p.fisc2 === dataFiscalizadaStr);
+                         if(assignedTask) responsiblePerito = assignedTask.nick;
+                    }
+                    
+                    const peritoAction = getPeritoAction(descricao, infractionActionMap);
+                    const rectificationKey = `${infrator.toLowerCase()}-${linha}`;
+                    const rectification = rectificationMap.get(rectificationKey);
+                    let rectificationNotice = null;
+                    if (rectification) {
+                        if (rectification.isPerito) {
+                            rectificationNotice = { text: `Retificação postada pelo perito ${rectification.nick} em ${rectification.timestamp.toLocaleString('pt-BR')}.`, class: 'text-blue-400', icon: 'fa-user-shield'};
+                        } else if (dataAbertura > rectification.timestamp) {
+                            rectificationNotice = { text: `Retificação postada pelo infrator ANTES do caso ser aberto. Ação punitiva deve ser cancelada.`, class: 'text-green-400', icon: 'fa-check-circle'};
+                        } else {
+                            rectificationNotice = { text: `Retificação postada pelo infrator APÓS o caso ser aberto. Ação punitiva pode ser aplicada.`, class: 'text-yellow-400', icon: 'fa-exclamation-triangle'};
+                        }
+                    }
+
+                    allInquiries.push({
+                        id: `${teamName.replace(/\s/g, '')}-${index}`, caseNumber, teamName, dataAbertura, responsavel: row[2] || '', 
+                        infrator, dataFiscalizada: dataFiscalizadaStr, linha, descricao, provas: row[7] || '', acao: row[8] || '',
+                        inqueritoStatus, resolucaoStatus, inqueritoDeadline, resolucaoDeadline, isInqueritoExpired, isResolucaoExpired,
+                        responsiblePerito, peritoAction, rectificationNotice,
+                        inqueritoLink: row[11] || '' // Link do inquérito (virá da coluna M da planilha)
+                    });
+                });
+            });
+            window.appData = { inquiries: allInquiries };
+            return allInquiries;
+        }
+
+        function processRectificationData(data, allPeritosSet) {
+            const map = new Map();
+            if (!data.values) return map;
+            data.values.forEach(([timestampStr, nick, , linha]) => {
+                if (nick && linha) {
+                    const nickTrimmed = nick.trim();
+                    const key = `${nickTrimmed.toLowerCase()}-${linha.trim()}`;
+                    const isPerito = allPeritosSet.has(nickTrimmed.toLowerCase());
+                    map.set(key, { timestamp: parseDateTime(timestampStr), nick: nickTrimmed, isPerito });
+                }
+            });
+            return map;
+        }
+
+        function processInfractionActions(data) {
+            const actionMap = new Map();
+            const boardData = [];
+            if (!data.values) return { infractionActionMap: actionMap, infractionsBoardData: boardData };
+            
+            let currentCategory = null;
+            let currentGroupedAction = null;
+            let currentInfractions = [];
+
+            const finalizeGroup = () => {
+                if (currentGroupedAction && currentInfractions.length > 0) {
+                     let categoryGroup = boardData.find(g => g.type === currentCategory);
+                     if (!categoryGroup) {
+                         categoryGroup = {type: currentCategory, groups: []};
+                         boardData.push(categoryGroup);
+                     }
+                     categoryGroup.groups.push({
+                         action: currentGroupedAction,
+                         infractions: currentInfractions
+                     });
+                }
+            };
+            
+            data.values.forEach(row => {
+                const category = row[0] || null;
+                const infraction = row[1] || null;
+                const peritoAction = row[6] || null;
+
+                if (category) {
+                    finalizeGroup();
+                    currentCategory = category;
+                    currentGroupedAction = null;
+                    currentInfractions = [];
+                }
+
+                if (infraction) {
+                    const trimmedInfraction = infraction.trim();
+                     if (peritoAction) {
+                         finalizeGroup();
+                         currentGroupedAction = peritoAction.trim();
+                         currentInfractions = [trimmedInfraction];
+                     } else if (currentGroupedAction) {
+                         currentInfractions.push(trimmedInfraction);
+                     }
+                    actionMap.set(trimmedInfraction, currentGroupedAction || 'N/A');
+                }
+            });
+            finalizeGroup();
+
+            return { infractionActionMap: actionMap, infractionsBoardData: boardData };
+        }
+        
+        // --- UI & RENDERING ---
+        
+        function renderControls() {
+            teamButtonsContainer.innerHTML = `<button class="control-btn font-semibold py-2 px-4 rounded-md active" data-team-id="all">Todos</button>`;
+            TEAMS_REPORTS.forEach(teamName => {
+                teamButtonsContainer.innerHTML += `<button class="control-btn font-semibold py-2 px-4 rounded-md" data-team-id="${teamName}">${teamName.replace('Equipe ','')}</button>`;
+            });
+        }
+        
+        function displayInquiries(teamFilter, allInquiries) {
+            countdownTimers = [];
+            if(timerInterval) clearInterval(timerInterval);
+            
+            const activeBtn = document.querySelector('#team-buttons .control-btn.active');
+            if(activeBtn) activeBtn.classList.remove('active');
+
+            const newActiveBtn = document.querySelector(`#team-buttons .control-btn[data-team-id="${teamFilter}"]`);
+            if(newActiveBtn) newActiveBtn.classList.add('active');
+
+            const inquiriesToDisplay = teamFilter === 'all'
+                ? allInquiries
+                : allInquiries.filter(item => item.teamName === teamFilter);
+
+            const pendingCases = inquiriesToDisplay.filter(i => i.inqueritoStatus.toLowerCase() === 'inquérito pendente' || i.resolucaoStatus.toLowerCase() === 'resolução pendente');
+            pendingCases.sort((a, b) => {
+                if (a.isInqueritoExpired && !b.isInqueritoExpired) return -1; if (!a.isInqueritoExpired && b.isInqueritoExpired) return 1;
+                if (a.isResolucaoExpired && !b.isResolucaoExpired) return -1; if (!a.isResolucaoExpired && b.isResolucaoExpired) return 1;
+                return b.dataAbertura - a.dataAbertura;
+            });
+
+            const resolvedCases = inquiriesToDisplay.filter(i => i.resolucaoStatus.toLowerCase() === 'ocorrência resolvida');
+            const noCases = inquiriesToDisplay.filter(i => i.inqueritoStatus.toLowerCase() === 'sem casos');
+            const canceledCases = inquiriesToDisplay.filter(i => i.resolucaoStatus.toLowerCase() === 'ocorrência cancelada');
+
+            let finalHTML = '';
+            finalHTML += generateTableHTML('Casos Pendentes', 'fa-clock', pendingCases, true);
+            finalHTML += generateTableHTML('Casos Resolvidos', 'fa-check-circle', resolvedCases, true);
+            finalHTML += generateTableHTML('Sem Casos', 'fa-folder-open', noCases, false);
+            finalHTML += generateTableHTML('Casos Cancelados', 'fa-times-circle', canceledCases, false);
+
+            inquiriesContainer.innerHTML = finalHTML;
+            
+            if(countdownTimers.length > 0) {
+                updateTimers();
+                timerInterval = setInterval(updateTimers, 1000);
+            }
+        }
+        
+        function generateTableHTML(title, icon, cases, showCaseNumber = true) {
+            if (cases.length === 0) {
+                return `<div><h3 class="table-section-header"><i class="fas ${icon} text-purple-400"></i>${title}</h3><div class="glass-card text-gray-400 text-center p-6"><p>Nenhum caso nesta categoria.</p></div></div>`;
+            }
+            const caseNumberHeader = showCaseNumber ? `<th class="py-3 px-2">Nº</th>` : '';
+            return `
+                <div>
+                    <h3 class="table-section-header"><i class="fas ${icon} text-purple-400"></i>${title} (${cases.length})</h3>
+                    <div class="glass-card text-white p-4 sm:p-6">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm text-left">
+                                <thead class="text-purple-300 uppercase">
+                                    <tr class="border-b border-white/20">
+                                        ${caseNumberHeader}
+                                        <th class="py-3 px-2">Responsável</th><th class="py-3 px-2">Infrator</th>
+                                        <th class="py-3 px-2">Perito Resp.</th><th class="py-3 px-2">Data Fisc.</th><th class="py-3 px-2">Linha</th>
+                                        <th class="py-3 px-2">Descrição</th><th class="py-3 px-2">Ação Recomendada</th><th class="py-3 px-2 text-center">Provas</th>
+                                        <th class="py-3 px-2 text-center">Inquérito</th><th class="py-3 px-2 text-center">Resolução</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${cases.map(item => generateTableRow(item, showCaseNumber)).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>`;
+        }
+        
+        function generateTableRow(item, showCaseNumber) {
+            let rowClass = '';
+            if (item.isInqueritoExpired || item.isResolucaoExpired) rowClass = 'expired-row';
+            else if (item.inqueritoDeadline || item.resolucaoDeadline) rowClass = 'pending-row';
+            
+            const caseNumberCell = showCaseNumber ? `<td class="py-3 px-2 case-number-col">${item.caseNumber}</td>` : '';
+
+            let inqueritoCellHTML = '';
+            if (item.inqueritoDeadline) {
+                const timerId = `inquerito-timer-${item.id}`;
+                countdownTimers.push({ elementId: timerId, endTime: item.inqueritoDeadline.getTime(), parentId: `row-${item.id}` });
+                inqueritoCellHTML = `<div class="font-semibold text-yellow-300">Pendente</div><div class="timer-cell text-xs" id="${timerId}"></div>`;
+                if(item.isInqueritoExpired) inqueritoCellHTML = `<div class="font-bold text-red-400">EXPIRADO <i class="fas fa-triangle-exclamation"></i></div>`;
+            } else {
+                 if (item.inqueritoStatus.toLowerCase() === 'inquérito finalizado' && item.inqueritoLink) {
+                    inqueritoCellHTML = `<a href="${item.inqueritoLink}" target="_blank" class="text-green-400 hover:text-green-300 font-semibold">${item.inqueritoStatus}</a>`;
+                } else {
+                    inqueritoCellHTML = `<span class="${item.inqueritoStatus.toLowerCase() === 'inquérito finalizado' ? 'text-green-400' : 'text-gray-400'}">${item.inqueritoStatus || '-'}</span>`;
+                }
+            }
+            let resolucaoCellHTML = '';
+            if (item.resolucaoDeadline) {
+                const timerId = `resolucao-timer-${item.id}`;
+                countdownTimers.push({ elementId: timerId, endTime: item.resolucaoDeadline.getTime(), parentId: `row-${item.id}` });
+                resolucaoCellHTML = `<div class="font-semibold text-yellow-300">Pendente</div><div class="timer-cell text-xs" id="${timerId}"></div>`;
+                 if(item.isResolucaoExpired) resolucaoCellHTML = `<div class="font-bold text-red-400">EXPIRADO <i class="fas fa-triangle-exclamation"></i></div>`;
+            } else {
+                resolucaoCellHTML = `<span class="${item.resolucaoStatus === 'Ocorrência resolvida' ? 'text-green-400' : 'text-gray-400'}">${item.resolucaoStatus || '-'}</span>`;
+            }
+            return `
+                <tr id="row-${item.id}" class="border-b border-white/10 ${rowClass}">
+                    ${caseNumberCell}
+                    <td class="py-3 px-2">${item.responsavel}</td>
+                    <td class="py-3 px-2">${item.infrator} 
+                        ${item.rectificationNotice ? `<i class="fas ${item.rectificationNotice.icon} ml-2 ${item.rectificationNotice.class}" title="${item.rectificationNotice.text}"></i>` : ''}
+                    </td>
+                    <td class="py-3 px-2">${item.responsiblePerito}</td>
+                    <td class="py-3 px-2">${item.dataFiscalizada}</td>
+                    <td class="py-3 px-2">${item.linha}</td>
+                    <td class="py-3 px-2 max-w-xs truncate" title="${item.descricao}">${item.descricao}</td>
+                    <td class="py-3 px-2 text-xs">${item.peritoAction}</td>
+                    <td class="py-3 px-2 text-center">
+                        ${item.provas ? `<a href="${item.provas}" target="_blank" class="text-purple-300 hover:text-purple-200" title="Provas"><i class="fas fa-camera"></i></a>` : '-'}
+                    </td>
+                    <td class="py-3 px-2 text-center">${inqueritoCellHTML}</td>
+                    <td class="py-3 px-2 text-center">${resolucaoCellHTML}</td>
+                </tr>`;
+        }
+
+        function updateTimers() {
+            countdownTimers.forEach(timerInfo => {
+                const timerElement = document.getElementById(timerInfo.elementId); if (!timerElement) return;
+                const distance = timerInfo.endTime - new Date().getTime();
+                if (distance < 0) {
+                    timerElement.innerHTML = "Expirado";
+                    const parentRow = document.getElementById(timerInfo.parentId);
+                    if (parentRow && !parentRow.classList.contains('expired-row')) {
+                        fetchAllData(weekSelector.value);
+                    }
+                    return;
+                }
+                const d = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((distance % (1000 * 60)) / 1000);
+                timerElement.innerHTML = `${d > 0 ? d + 'd ' : ''}${h}h ${m}m ${s}s`;
+            });
+        }
+        
+        function processScheduleData(data) {
+            let rangeCursor = 0;
+            const allPeritosSet = new Set();
+            const processedSchedule = TEAMS_SCHEDULE.filter(t => t.reportTab !== null).map(team => {
+                const peritoRaw = data.valueRanges[rangeCursor]?.values?.[0]?.[0] || 'N/A';
+                const teamPeritos = peritoRaw.replace(/Perito Responsável:\s*/i, '').trim().split(/ e | & /).map(p => p.trim());
+                teamPeritos.forEach(p => allPeritosSet.add(p.toLowerCase()));
+                const teamObject = {
+                    id: team.name, name: team.name.replace('[SPP] Equipe ', ''),
+                    peritoResponsavel: teamPeritos, tableData: data.valueRanges[rangeCursor + 2]?.values || [],
+                };
+                rangeCursor += 3;
+                if (team.extraRanges) {
+                    const peritoTaskData = data.valueRanges[rangeCursor]?.values || [];
+                    teamObject.peritoTasks = peritoTaskData.map(row => {
+                        const nick = row[0] || null;
+                        if(nick) allPeritosSet.add(nick.toLowerCase());
+                        return { nick, fisc1: row[1] || '-', fisc2: row[2] || '-' };
+                    }).filter(p => p.nick);
+                    rangeCursor += team.extraRanges.length;
+                }
+                return teamObject;
+            });
+            return { processedSchedule, allPeritosSet };
+        }
+
+        function processReportStatusData(data) {
+            const fiscalizacoes = new Map(); const justificativas = new Map();
+            if (!data.valueRanges) return { fiscalizacoes, justificativas };
+            data.valueRanges.forEach(rangeData => {
+                const rows = rangeData.values || [];
+                if (rangeData.range.includes('!C')) {
+                    rows.forEach(([, nick, , fiscDate]) => {
+                        if (nick && fiscDate) {
+                            const nickLower = nick.trim().toLowerCase();
+                            if (!fiscalizacoes.has(fiscDate.trim())) fiscalizacoes.set(fiscDate.trim(), []);
+                            fiscalizacoes.get(fiscDate.trim()).push(nickLower);
+                        }
+                    });
+                } else if (rangeData.range.includes('!N')) {
+                    rows.forEach(([nick, , justifDate]) => {
+                         if (nick && justifDate) {
+                              const key = `${justifDate.trim()}-${nick.trim().toLowerCase()}`;
+                              if(!justificativas.has(key)) justificativas.set(key, true);
+                         }
+                    });
+                }
+            });
+            return { fiscalizacoes, justificativas };
+        }
+        
+        function getPeritoTaskStatus(peritoNick, dateAnalisada, teamData, activityMaps) {
+            const todayDt = new Date(); todayDt.setHours(0,0,0,0);
+            if (!dateAnalisada || dateAnalisada === '-') return { required: false };
+            if (activityMaps.fiscalizacoes.has(dateAnalisada) && activityMaps.fiscalizacoes.get(dateAnalisada).includes(peritoNick.toLowerCase())) return { required: false };
+            let originalAnalyst = null, analystDeadlineStr = null;
+            for (const row of teamData.tableData.slice(1)) {
+                if (!row[0] || row[0].toLowerCase() === 'perito') continue;
+                if (row[3] === dateAnalisada) { originalAnalyst = row[0]; analystDeadlineStr = row[6]; break; }
+                if (row[4] === dateAnalisada) { originalAnalyst = row[0]; analystDeadlineStr = row[7]; break; }
+            }
+            if (!originalAnalyst || !analystDeadlineStr) return { required: false };
+            if (activityMaps.fiscalizacoes.has(dateAnalisada) && activityMaps.fiscalizacoes.get(dateAnalisada).includes(originalAnalyst.toLowerCase())) return { required: false };
+            const analystJustified = activityMaps.justificativas.has(`${dateAnalisada}-${originalAnalyst.toLowerCase()}`) || activityMaps.justificativas.has(`${analystDeadlineStr}-${originalAnalyst.toLowerCase()}`);
+            const analystDeadline = parseDate(analystDeadlineStr);
+            if (!analystDeadline || analystDeadline >= todayDt) return { required: false };
+            const peritoDeadline = new Date(analystDeadline.getTime() + (2 * 24 * 60 * 60 * 1000));
+            const justificationText = analystJustified ? 'Analista justificou.' : 'Analista não finalizou nem justificou.';
+            if (now < peritoDeadline) {
+                 const timerId = `perito-task-timer-${peritoNick}-${dateAnalisada}`.replace(/[^a-zA-Z0-9-]/g, '');
+                 countdownTimers.push({ elementId: timerId, endTime: peritoDeadline.getTime() });
+                 return { required: true, status: 'alerta', text: `Ação necessária. ${justificationText}`, date: dateAnalisada, analyst: originalAnalyst, timerId };
+            } else {
+                 return { required: true, status: 'pendente', text: `Ação pendente. ${justificationText}`, date: dateAnalisada, analyst: originalAnalyst };
+            }
+        }
+        
+        function renderPendingScheduleTasks(schedule, activityMaps) {
+            let pendingTasksHTML = '';
+            schedule.forEach(teamData => {
+                 if (teamData.id.includes('Beta') && teamData.peritoTasks) {
+                      teamData.peritoTasks.forEach(peritoTask => {
+                           if (!peritoTask.nick) return;
+                           [peritoTask.fisc1, peritoTask.fisc2].forEach(fisc => {
+                                const status = getPeritoTaskStatus(peritoTask.nick, fisc, teamData, activityMaps);
+                                if (status.required) pendingTasksHTML += createTaskCard(peritoTask.nick, teamData.name, status);
+                           });
+                      });
+                 }
+            });
+            pendingScheduleContainer.innerHTML = pendingTasksHTML || `<div class="glass-card text-green-400 text-center p-6"><p class="text-xl font-semibold">Nenhuma tarefa da escala pendente para os peritos.</p></div>`;
+        }
+        
+        function createTaskCard(perito, team, status) {
+            return `
+                <div class="glass-card p-4 flex flex-col sm:flex-row items-center justify-between gap-4 ${status.status === 'pendente' ? 'expired-row' : 'pending-row'}">
+                    <div>
+                        <div class="font-bold text-lg">${perito} <span class="text-sm font-normal text-gray-300">(${team})</span></div>
+                        <div class="text-sm text-purple-300">Deve fiscalizar a data de <strong class="text-white">${status.date}</strong> (tarefa de ${status.analyst})</div>
+                    </div>
+                    <div class="text-right">
+                         <div class="status-cell rounded-md px-3 py-1 text-sm font-semibold status-${status.status}">${status.text}</div>
+                         ${status.timerId ? `<div id="${status.timerId}" class="timer-cell text-xs mt-1"></div>` : ''}
+                    </div>
+                </div>`;
+        }
+        
+        function getPeritoAction(description, infractionMap) {
+            if (!description || !infractionMap || infractionMap.size === 0) return 'VERIFICAR MANUALMENTE';
+            const cleanDescription = (description.split(' - ')[1] || description).trim();
+            
+            let bestMatch = { key: null, score: -1 };
+            for (const key of infractionMap.keys()) {
+                const score = calculateSimilarity(cleanDescription, key);
+                if (score > bestMatch.score) {
+                    bestMatch = { key, score };
+                }
+            }
+            
+            if (bestMatch.score > 0.4) {
+                return infractionMap.get(bestMatch.key);
+            }
+
+            return 'VERIFICAR MANUALMENTE';
+        }
+
+        function calculateSimilarity(str1, str2) {
+            const clean = (s) => s.toLowerCase().replace(/[^a-z0-9\s]/gi, '').split(' ').filter(Boolean);
+            const words1 = new Set(clean(str1));
+            const words2 = new Set(clean(str2));
+            if (words1.size === 0 || words2.size === 0) return 0;
+            const intersection = new Set([...words1].filter(word => words2.has(word)));
+            const union = new Set([...words1, ...words2]);
+            return intersection.size / union.size; // Jaccard Similarity
+        }
+
+        function renderInfractionsBoard(infractionsBoardData) {
+            const container = document.getElementById('infractions-board');
+            if(!infractionsBoardData || infractionsBoardData.length === 0){
+                container.innerHTML = `<p class="text-gray-400">Não foi possível carregar o quadro de infrações.</p>`;
+                return;
+            }
+
+            container.innerHTML = infractionsBoardData.map(group => {
+                let tableRowsHTML = '';
+                group.groups.forEach(actionGroup => {
+                    const firstInfraction = actionGroup.infractions[0];
+                    tableRowsHTML += `
+                        <tr class="border-b border-white/10">
+                            <td class="w-1/2">${firstInfraction}</td>
+                            <td class="w-1/2 text-purple-200 align-middle text-center" rowspan="${actionGroup.infractions.length}">${actionGroup.action}</td>
+                        </tr>
+                    `;
+                    for(let i = 1; i < actionGroup.infractions.length; i++){
+                        tableRowsHTML += `<tr class="border-b border-white/10"><td class="w-1/2">${actionGroup.infractions[i]}</td></tr>`;
+                    }
+                });
+
+                return `
+                    <div class="mb-6">
+                        <h4 class="text-xl font-bold text-purple-300 mb-3">${group.type}</h4>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-black/30">
+                                    <tr>
+                                        <th class="py-2 px-3 text-left font-semibold">Tipo de Infração</th>
+                                        <th class="py-2 px-3 text-center font-semibold">Ação do Perito</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tableRowsHTML}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function generateWeekOptions() {
+            const today = new Date();
+            const dayOfWeek = today.getDay(); // 0 (Sun) - 6 (Sat)
+            const mostRecentFriday = new Date(today);
+            const daysSinceFriday = (dayOfWeek - 5 + 7) % 7;
+            mostRecentFriday.setDate(today.getDate() - daysSinceFriday);
+            
+            for (let i = 0; i > -8; i--) { // Current week and 8 past weeks
+                const optionStartDate = new Date(mostRecentFriday);
+                optionStartDate.setDate(mostRecentFriday.getDate() + (i * 7));
+                const optionEndDate = new Date(optionStartDate);
+                optionEndDate.setDate(optionStartDate.getDate() + 6);
+
+                const format = (date) => date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const value = `${format(optionStartDate)} a ${format(optionEndDate)}`;
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                if (i === 0) {
+                    option.selected = true;
+                }
+                weekSelector.appendChild(option);
+            }
+        }
+
+        // --- EVENT LISTENERS ---
+        window.addEventListener('load', () => {
+            renderControls();
+            generateWeekOptions();
+            fetchAllData(weekSelector.value);
+        });
+        
+        teamButtonsContainer.addEventListener('click', (e) => {
+            if (e.target.matches('button')) {
+                const teamId = e.target.dataset.teamId;
+                displayInquiries(teamId, window.appData.inquiries);
+            }
+        });
+        
+        weekSelector.addEventListener('change', (e) => {
+            fetchAllData(e.target.value);
+        });
+
+    </script>
+</body>
+</html>
